@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><gals_file><options_list><option><name>scanner.gen</name><value>true</value></option><option><name>parser.gen</name><value>false</value></option><option><name>scanner.sensitive</name><value>true</value></option><option><name>scanner.name</name><value>Lexico</value></option><option><name>parser.name</name><value>Sintatico</value></option><option><name>semantic.name</name><value>Semantico</value></option><option><name>package</name><value/></option><option><name>language</name><value>java</value></option><option><name>language</name><value>java</value></option><option><name>parser</name><value>SLR</value></option><option><name>table.scanner</name><value>full</value></option></options_list><data><definitions>LETRA: [A-Za-z]
+DIGITO: [0-9]
+TIPOS: "INTEIRO" | "VARCHAR"</definitions><tokens>//operadores
+"+"
+"-"
+"="
+"*"
+"/"
+
+//tokens
+ATRIBUICAO:  {TIPOS}
+ID: {LETRA} ({LETRA} | {DIGITO})
+INTEIRO: {DIGITO}
+
+//ignorar
+: [" "\t\n\r]*
+
+</tokens><non_terminals/><grammar/></data></gals_file>
