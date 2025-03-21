@@ -2,14 +2,27 @@
 DIGITO: [0-9]
 TIPOS: "INT" | "VARCHAR"
 CONDICIONAIS: "IF" | "ELSE" | "ELIF"
-BOOLEANOS: TRUE | FALSE</definitions><tokens>//operadores
+BOOLEANOS: TRUE | FALSE
+COMENTARIOS: ["\"]["\"][^\n\r]*</definitions><tokens>//operadores
 "+"
 "-"
 "="
 "*"
 "/"
+"("
+")"
+";"
+","
+"."
 // teste lógico
-SIMBOLOS_LOGICO: "&gt;" | "&gt;=" | "&lt;" | "&lt;=" | "==" | "!=" 
+"&gt;"
+"&gt;=" 
+"&lt;" 
+"&lt;="
+"==" 
+"!=" 
+"'"
+
 
  
 
@@ -19,8 +32,22 @@ TIPO:  {TIPOS}
 ID: {LETRA} ({LETRA} | {DIGITO})*
 INTEIRO: {DIGITO}+
 
-TESTE_LOGICO: {ID} {SIMBOLOS_LOGICO} {ID} ( (&amp;&amp; | | \|\|) {SIMBOLOS_LOGICO}? {TESTE_LOGICO})* 
-CONDICIONAIS: CONDICIONAIS({TESTE_LOGICO}) 
+//desvio condicional
+IF = ID : "IF"
+ELSE = ID : "ELSE"
+ELIF = ID : "ELIF"
+
+//repetição
+FOR = ID : "FOR"
+WHILE = ID : "WHILE"
+DO = ID : "DO"
+
+//FUNCAO
+FUNCAO = ID: "FUNCTION"
+
+
+//TESTE_LOGICO: {ID} {SIMBOLOS_LOGICO} {ID} ( (&amp;&amp; | | \|\|) {SIMBOLOS_LOGICO}? {TESTE_LOGICO})* 
+//CONDICIONAIS: CONDICIONAIS({TESTE_LOGICO}) 
 //ignorar
 : [" "\t\n\r]*
 
