@@ -9,20 +9,18 @@ BOOLEANOS: TRUE | FALSE</definitions><tokens>//operadores
 "*"
 "/"
 // teste lógico
-"&gt;"
-"&gt;="
-"&lt;"
-"&lt;="
-"=="
-"!="
+SIMBOLOS_LOGICO: "&gt;" | "&gt;=" | "&lt;" | "&lt;=" | "==" | "!=" 
 
+ 
 
 //tokens
-CONDICIONAIS: {CONDICIONAIS} 
+
 TIPO:  {TIPOS}
 ID: {LETRA} ({LETRA} | {DIGITO})*
 INTEIRO: {DIGITO}+
 
+TESTE_LOGICO: {ID} {SIMBOLOS_LOGICO} {ID} ( (&amp;&amp; | | \|\|) {SIMBOLOS_LOGICO}? {TESTE_LOGICO})* 
+CONDICIONAIS: CONDICIONAIS({TESTE_LOGICO}) 
 //ignorar
 : [" "\t\n\r]*
 
