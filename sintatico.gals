@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><gals_file><options_list><option><name>scanner.gen</name><value>true</value></option><option><name>parser.gen</name><value>false</value></option><option><name>scanner.sensitive</name><value>true</value></option><option><name>scanner.name</name><value>Lexico</value></option><option><name>parser.name</name><value>Sintatico</value></option><option><name>semantic.name</name><value>Semantico</value></option><option><name>package</name><value/></option><option><name>language</name><value>java</value></option><option><name>language</name><value>java</value></option><option><name>parser</name><value>SLR</value></option><option><name>table.scanner</name><value>full</value></option></options_list><data><definitions>LETRA: [A-Za-z]
 DIGITO: [0-9]
-TIPOS: "INT" | "VARCHAR"
-CONDICIONAIS: "IF" | "ELSE" | "ELIF"
-BOOLEANOS: TRUE | FALSE
-COMENTARIOS: ["\"]["\"][^\n\r]*</definitions><tokens>//operadores
+MASCARA: "\%d"
+TIPOS: "int" | "bool" | "char" | "float" | "double"  
+CONDICIONAIS: "if" | "else" | "elif"
+LOOPS: "for" | "while" | "do"
+BOOLEANOS: "true" | "false"
+COMENTARIOS: ["\"]["\"][^\n\r]*
+FUNCOES: "printf" | "scanf"
+ASPASDUPLAS: \"</definitions><tokens>
+
+
+//comentarios
+"//"
+"/*"
+"*/"
+
+//operadores
+"++"
+"--"
+"+="
+"-="
 "+"
 "-"
 "="
@@ -12,42 +28,41 @@ COMENTARIOS: ["\"]["\"][^\n\r]*</definitions><tokens>//operadores
 "("
 ")"
 ";"
+"{"
+"}"
 ","
 "."
+"&amp;"
+
 // teste lógico
-"&gt;"
-"&gt;=" 
-"&lt;" 
-"&lt;="
-"==" 
-"!=" 
-"'"
+MAIOR: "&gt;"
+MAIORIGUAL: "&gt;=" 
+MENOR:"&lt;" 
+MENORIGUAL:"&lt;="
+IGUAL: "==" 
+DIF: "!=" 
+AND: "&amp;&amp;"
+OR: "||"
+ASPASSIMPLES: "'"
 
 
- 
+
+
+//desvio condicional
+CONDICIONAIS: {CONDICIONAIS}
+LOOP: {LOOPS}
+
+
+//FUNÇÕES DO SISTEMA
+FUNCOES: {FUNCOES}
 
 //tokens
-
 TIPO:  {TIPOS}
 ID: {LETRA} ({LETRA} | {DIGITO})*
 INTEIRO: {DIGITO}+
-
-//desvio condicional
-IF = ID : "IF"
-ELSE = ID : "ELSE"
-ELIF = ID : "ELIF"
-
-//repetição
-FOR = ID : "FOR"
-WHILE = ID : "WHILE"
-DO = ID : "DO"
-
-//FUNCAO
-FUNCAO = ID: "FUNCTION"
-
-
-//TESTE_LOGICO: {ID} {SIMBOLOS_LOGICO} {ID} ( (&amp;&amp; | | \|\|) {SIMBOLOS_LOGICO}? {TESTE_LOGICO})* 
-//CONDICIONAIS: CONDICIONAIS({TESTE_LOGICO}) 
+REAL: {DIGITO}?\.{DIGITO}+
+STRING: {ASPASDUPLAS}(.)*{ASPASDUPLAS}
+MASCARA = STRING: "\" 
 //ignorar
 : [" "\t\n\r]*
 
