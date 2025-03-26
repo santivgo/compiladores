@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><gals_file><options_list><option><name>scanner.gen</name><value>true</value></option><option><name>parser.gen</name><value>false</value></option><option><name>scanner.sensitive</name><value>true</value></option><option><name>scanner.name</name><value>Lexico</value></option><option><name>parser.name</name><value>Sintatico</value></option><option><name>semantic.name</name><value>Semantico</value></option><option><name>package</name><value/></option><option><name>language</name><value>java</value></option><option><name>language</name><value>java</value></option><option><name>parser</name><value>SLR</value></option><option><name>table.scanner</name><value>full</value></option></options_list><data><definitions>LETRA: [A-Za-z]
 DIGITO: [0-9]
-MASCARA: "\%d"
-TIPOS: "int" | "bool" | "char" | "float" | "double"  
+MASCARA: %(d|s|f|i)
+TIPOS: "int" | "bool" | "char" | "float" | "double"  | "void"
+
 CONDICIONAIS: "if" | "else" | "elif"
 LOOPS: "for" | "while" | "do"
 BOOLEANOS: "true" | "false"
 COMENTARIOS: ["\"]["\"][^\n\r]*
 FUNCOES: "printf" | "scanf"
-ASPASDUPLAS: \"</definitions><tokens>
+ASPASDUPLAS: \"
+COMENTARIO: ["/"]["/"][^\n\r]*</definitions><tokens>
 
 
 //comentarios
-"//"
+COMENTARIOS: {COMENTARIO}
+COMENTARIOS_GRANDE: "/*" [^\0]* "*/"
 "/*"
 "*/"
 
@@ -20,9 +23,11 @@ ASPASDUPLAS: \"</definitions><tokens>
 "--"
 "+="
 "-="
+"*="
+"/="
 "+"
 "-"
-"="
+ATRIB: "="
 "*"
 "/"
 "("
@@ -45,9 +50,6 @@ AND: "&amp;&amp;"
 OR: "||"
 ASPASSIMPLES: "'"
 
-
-
-
 //desvio condicional
 CONDICIONAIS: {CONDICIONAIS}
 LOOP: {LOOPS}
@@ -55,14 +57,19 @@ LOOP: {LOOPS}
 
 //FUNÇÕES DO SISTEMA
 FUNCOES: {FUNCOES}
-
 //tokens
+MASCARA: {ASPASDUPLAS} ({MASCARA})+[^\n]* {ASPASDUPLAS}
+
 TIPO:  {TIPOS}
+
 ID: {LETRA} ({LETRA} | {DIGITO})*
 INTEIRO: {DIGITO}+
 REAL: {DIGITO}?\.{DIGITO}+
 STRING: {ASPASDUPLAS}(.)*{ASPASDUPLAS}
-MASCARA = STRING: "\" 
+
+
+
+
 //ignorar
 : [" "\t\n\r]*
 
