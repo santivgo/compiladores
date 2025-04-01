@@ -6,7 +6,7 @@ DECIMAL ({INTEGER}?\.{INTEGER}+)
 NUM ({INTEGER}+|{DECIMAL})
 SIMB [-+*/=]
 DESC [ \n\t]
-MATHOP ({NUM}{SIMB}{NUM})
+MATHOP ({NUM}({SIMB}{NUM})+)
 
 %%
  /*tokens*/
