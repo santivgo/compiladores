@@ -3,7 +3,6 @@
 int main(){
     int n1, n2;
 
-    bool
     printf("Digite 1º número");
     scanf("%d", &n1);
     printf("Digite 2º número");
@@ -12,7 +11,7 @@ int main(){
     printf("%d", n1+n2);
     printf("%d", n1-n2);
     printf("%d", n1*n2);
-    printf("%d", n1/n2);
+    printf("%f", n1/n2);
 
     
 
