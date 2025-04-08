@@ -11,7 +11,7 @@ int main(){
     printf("%d", n1+n2);
     printf("%d", n1-n2);
     printf("%d", n1*n2);
-    printf("%f", n1/n2);
+    printf("%.2f", n1/n2);
 
     
 

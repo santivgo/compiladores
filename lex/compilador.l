@@ -12,7 +12,7 @@ ASPASDUPLAS     \"
 CHAR            [A-Za-z_]
 INTEGER         [0-9]
 ALNUM           [A-Za-z0-9_]
-MASK            ({ASPASDUPLAS}\%[d|s|f|i]{ASPASDUPLAS})
+MASK            ({ASPASDUPLAS}\%(\.{NUM}+)?[d|s|f|i]{ASPASDUPLAS})
 DECIMAL         ({INTEGER}?\.{INTEGER}+)
 NUM             ({INTEGER}+|{DECIMAL})
 STRING          {ASPASDUPLAS}(.)*{ASPASDUPLAS}
