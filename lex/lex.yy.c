@@ -362,16 +362,16 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[100] =
     {   0,
-        0,    0,   21,   20,   14,   15,   13,   13,   12,    5,
-        5,   13,   12,    9,   12,    8,    8,    8,    8,    8,
-        8,    8,    8,    8,    8,    8,    8,    8,   12,    0,
-       16,    0,    5,   10,    0,    3,    0,   11,    8,    8,
-        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-        8,    8,    8,    8,    0,    0,    0,    3,    8,    8,
-        8,    8,    8,    8,    8,    8,    2,    8,    8,    8,
-        8,    8,    8,    1,    4,    2,    2,    8,    8,    8,
-        8,    8,    8,    8,    8,    8,    2,    8,    8,    8,
-        2,    8,    8,    6,    8,    2,    6,    7,    0
+        0,    0,   21,   20,   18,   19,   17,   17,   16,    5,
+        5,   17,   16,   13,   16,   12,   12,   12,   12,   12,
+       12,   12,   12,   12,   12,   12,   12,   12,   16,    0,
+       10,    0,    5,   14,    0,    3,    0,   15,   12,   12,
+       12,    7,   12,   12,   12,   12,    8,   12,   12,   12,
+       12,   12,   12,   12,    0,    0,    0,    3,   12,   12,
+       12,   12,   12,   12,   12,    7,    2,   12,   12,   12,
+       12,   12,   12,    1,    4,    2,    2,   12,    8,    8,
+       12,   12,   12,   12,   12,    9,    2,   12,   12,    9,
+        2,   12,   12,    6,    7,    2,    6,   11,    0
 
     } ;
 
@@ -529,8 +529,8 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "calculadora.l"
-#line 2 "calculadora.l"
+#line 1 "compilador.l"
+#line 2 "compilador.l"
     #include <stdio.h>
 #line 536 "lex.yy.c"
 #line 537 "lex.yy.c"
@@ -750,9 +750,9 @@ YY_DECL
 		}
 
 	{
-#line 30 "calculadora.l"
+#line 29 "compilador.l"
 
-#line 32 "calculadora.l"
+#line 31 "compilador.l"
  /*tokens*/
 #line 758 "lex.yy.c"
 
@@ -813,103 +813,103 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 33 "calculadora.l"
+#line 32 "compilador.l"
 {printf("achei uma mascara: %s\n", yytext);}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 34 "calculadora.l"
+#line 33 "compilador.l"
 {printf("achei um tipo: %s\n", yytext);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 35 "calculadora.l"
+#line 34 "compilador.l"
 {printf("achei um comentário: %s\n", yytext);}
 	YY_BREAK
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 36 "calculadora.l"
+#line 35 "compilador.l"
 {printf("achei um comentário multi: %s\n", yytext);}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 37 "calculadora.l"
+#line 36 "compilador.l"
 {printf("achei um símbolo: %s\n", yytext);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 38 "calculadora.l"
+#line 37 "compilador.l"
 {printf("achei uma função: %s\n", yytext);}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 39 "calculadora.l"
-{printf("achei um FIM: %s\n", yytext);}
+#line 38 "compilador.l"
+{printf("achei um loop: %s\n", yytext);}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 40 "calculadora.l"
-{printf("achei um identificador: %s\n", yytext);}
+#line 39 "compilador.l"
+{printf("achei um condicional: %s\n", yytext);}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 41 "calculadora.l"
-{printf("achei um número integer: %s\n", yytext);}
+#line 40 "compilador.l"
+{printf("achei um valor booleano: %s\n", yytext);}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 42 "calculadora.l"
-{printf("achei um número decimal: %s\n", yytext);}
+#line 41 "compilador.l"
+{printf("achei uma string: %s\n", yytext);}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 43 "calculadora.l"
-{printf("achei um número: %s\n", yytext);}
+#line 42 "compilador.l"
+{printf("achei um FIM: %s\n", yytext);}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 44 "calculadora.l"
-{printf("achei um atrib: %s\n", yytext);}
+#line 43 "compilador.l"
+{printf("achei um identificador: %s\n", yytext);}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 45 "calculadora.l"
-{printf("achei um agrupador: %s\n", yytext);}
+#line 44 "compilador.l"
+{printf("achei um número integer: %s\n", yytext);}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 46 "calculadora.l"
-{printf("achei um operador lógico: %s\n", yytext);}
+#line 45 "compilador.l"
+{printf("achei um número decimal: %s\n", yytext);}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 47 "calculadora.l"
-{printf("achei uma aspa dupla: %s\n", yytext);}
+#line 46 "compilador.l"
+{printf("achei um número: %s\n", yytext);}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 50 "calculadora.l"
-{printf("achei uma string: %s\n", yytext);}
+#line 47 "compilador.l"
+{printf("achei um atrib: %s\n", yytext);}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 51 "calculadora.l"
-{printf("achei um condicional: %s\n", yytext);}
+#line 48 "compilador.l"
+{printf("achei um agrupador: %s\n", yytext);}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 52 "calculadora.l"
-{printf("achei um loop: %s\n", yytext);}
+#line 49 "compilador.l"
+{printf("achei um operador lógico: %s\n", yytext);}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 53 "calculadora.l"
-{printf("achei um valor booleano: %s\n", yytext);}
+#line 50 "compilador.l"
+{printf("achei uma aspa dupla: %s\n", yytext);}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 57 "calculadora.l"
+#line 55 "compilador.l"
 ECHO;
 	YY_BREAK
 #line 916 "lex.yy.c"
@@ -1917,13 +1917,13 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 57 "calculadora.l"
+#line 55 "compilador.l"
 
 
 /*** Tokens ***/
 int main(void)
 {   
-
+    
     FILE *file = fopen("teste.c", "r");
     YY_BUFFER_STATE buffer = yy_create_buffer(file, YY_BUF_SIZE);
     yy_switch_to_buffer(buffer); // Muda o buffer para o arquivo

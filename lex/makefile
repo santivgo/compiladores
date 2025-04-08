@@ -1,5 +1,5 @@
-all: calculadora.l
+all: compilador.l
 	clear
-	flex -i calculadora.l
-	gcc lex.yy.c -o calculadora -lfl
-	./calculadora
+	flex -i compilador.l
+	gcc lex.yy.c -o compilador -lfl
+	./compilador
