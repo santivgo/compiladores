@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><gals_file><options_list><option><name>scanner.gen</name><value>true</value></option><option><name>parser.gen</name><value>true</value></option><option><name>scanner.sensitive</name><value>true</value></option><option><name>scanner.name</name><value>Lexico</value></option><option><name>parser.name</name><value>Sintatico</value></option><option><name>semantic.name</name><value>Semantico</value></option><option><name>package</name><value/></option><option><name>language</name><value>java</value></option><option><name>language</name><value>java</value></option><option><name>parser</name><value>SLR</value></option><option><name>table.scanner</name><value>full</value></option></options_list><data><definitions>L: [a-z]</definitions><tokens>"+"
+"*"
+
+ID : {L}*</tokens><non_terminals>&lt;E&gt;</non_terminals><grammar>&lt;E&gt; ::= &lt;E&gt; "+" &lt;E&gt; | &lt;E&gt; "*" &lt;E&gt; | ID;</grammar></data></gals_file>
