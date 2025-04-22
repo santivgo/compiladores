@@ -86,6 +86,7 @@ STRING: {ASPASDUPLAS}(.)*{ASPASDUPLAS}
 &lt;EXP&gt; ::= &lt;EXP&gt; &lt;OP&gt; &lt;EXP&gt; | "(" &lt;EXP&gt; ")" | ID | INTEIRO | REAL;
 &lt;OP&gt; ::= "+" | "-" | "*" | "/";
 
-&lt;ENTRADA&gt; ::= STRING | "," &lt;ENTRADA&gt; | ID | INTEIRO | REAL;
 &lt;ESCREVA&gt; ::= ESCREVA "(" &lt;ENTRADA&gt; ")";
+&lt;ENTRADA&gt; ::= STRING "," &lt;ENTRADA&gt; | STRING | ID | INTEIRO | REAL;
+
 </grammar></data></gals_file>
