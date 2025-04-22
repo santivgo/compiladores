@@ -1,0 +1,11 @@
+criar atribuicao OK
+leia e escreva
+
+é pra poder usar
+
+escreva("Resultado", c, ".")
+----
+
+<E>
+
+<E> ::= <E> "+" <E> | <E> "-" <E>  | ID;
