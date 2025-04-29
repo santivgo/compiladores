@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><gals_file><options_list><option><name>scanner.gen</name><value>true</value></option><option><name>parser.gen</name><value>true</value></option><option><name>scanner.sensitive</name><value>true</value></option><option><name>scanner.name</name><value>Lexico</value></option><option><name>parser.name</name><value>Sintatico</value></option><option><name>semantic.name</name><value>Semantico</value></option><option><name>package</name><value/></option><option><name>language</name><value>java</value></option><option><name>language</name><value>java</value></option><option><name>parser</name><value>SLR</value></option><option><name>table.scanner</name><value>full</value></option></options_list><data><definitions>LETRA: [A-Za-z]
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><gals_file><options_list><option><name>scanner.gen</name><value>true</value></option><option><name>parser.gen</name><value>true</value></option><option><name>scanner.sensitive</name><value>true</value></option><option><name>scanner.name</name><value>Lexico</value></option><option><name>parser.name</name><value>Sintatico</value></option><option><name>semantic.name</name><value>Semantico</value></option><option><name>package</name><value/></option><option><name>language</name><value>java</value></option><option><name>language</name><value>java</value></option><option><name>parser</name><value>SLR</value></option><option><name>table.scanner</name><value>full</value></option></options_list><data><definitions>LETRA: [A-Za-zà-úÀ-Ú]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
 DIGITO: [0-9]
 MASCARA: %(d|s|f|i)
 TIPOS: "int" | "bool" | "char" | "float" | "double"  | "void"
@@ -6,6 +6,9 @@ TIPOS: "int" | "bool" | "char" | "float" | "double"  | "void"
 CONDICIONAIS: "if" | "else" | "elif"
 LOOPS: "for" | "while" | "do"
 BOOLEANOS: "true" | "false"
+
+OP: "+" | "-" | "=" | "*" | "/" | "(" | ")" |";" | "," | "." | "&amp;"
+ESPECIAL: " "| "_"
 COMENTARIOS: ["\"]["\"][^\n\r]*
 FUNCOES: "printf" | "scanf"
 ASPASDUPLAS: \"
@@ -52,41 +55,62 @@ CONDICIONAIS: {CONDICIONAIS}
 LOOP: {LOOPS}
 
 
+
 //FUNÇÕES DO SISTEMA
-FUNCOES: {FUNCOES}
+INICIO: "INICIO"
+FIM: "FIM"
 LEIA: "scanf"
 ESCREVA: "printf"
+FUNCOES: {FUNCOES}
+
 
 //tokens
 MASCARA: {ASPASDUPLAS} ({MASCARA})+[^\n]* {ASPASDUPLAS}
 
 TIPO:  {TIPOS}
 
+
+
 ID: {LETRA} ({LETRA} | {DIGITO})*
 INTEIRO: {DIGITO}+
 REAL: {DIGITO}?\.{DIGITO}+
-STRING: {ASPASDUPLAS}(.)*{ASPASDUPLAS}
-
-
+STRING: {ASPASDUPLAS} ({LETRA}|{DIGITO}|{ESPECIAL}|{OP})+{ASPASDUPLAS}
 
 
 //ignorar
-: [" "\t\n\r]*
+ :  [" "\t\n\r]*
 
-</tokens><non_terminals>&lt;ATR&gt; 
+</tokens><non_terminals>&lt;START&gt;
+&lt;COD&gt;
+&lt;ATR&gt; 
 &lt;EXP&gt;
-&lt;ENTRADA&gt;
 &lt;ESCREVA&gt;
+&lt;LEIA&gt;
+&lt;MASCARA&gt;
+&lt;ID&gt;
+&lt;ENTRADA&gt;
 &lt;OP&gt;
 
 
 
 </non_terminals><grammar>
+&lt;START&gt; ::= INICIO &lt;COD&gt; FIM;
+&lt;COD&gt; ::= &lt;ATR&gt; &lt;COD&gt;| &lt;ENTRADA&gt; &lt;COD&gt; | &lt;ESCREVA&gt; &lt;COD&gt; | &lt;ATR&gt; | &lt;ENTRADA&gt; | &lt;ESCREVA&gt;;
+
 &lt;ATR&gt; ::= ID "=" &lt;EXP&gt;;
 &lt;EXP&gt; ::= &lt;EXP&gt; &lt;OP&gt; &lt;EXP&gt; | "(" &lt;EXP&gt; ")" | ID | INTEIRO | REAL;
 &lt;OP&gt; ::= "+" | "-" | "*" | "/";
 
+
+
+&lt;LEIA&gt; ::= LEIA "("&lt;ENTRADA&gt; ")";
 &lt;ESCREVA&gt; ::= ESCREVA "(" &lt;ENTRADA&gt; ")";
-&lt;ENTRADA&gt; ::= STRING "," &lt;ENTRADA&gt; | STRING | ID | INTEIRO | REAL;
+
+&lt;ENTRADA&gt; ::= STRING "," &lt;ENTRADA&gt; | ID "," &lt;ENTRADA&gt; | STRING | ID;
+
+
+&lt;MASCARA&gt; ::= MASCARA &lt;MASCARA&gt; |MASCARA;
+&lt;ID&gt; ::= ID "," &lt;ID&gt; |&lt;ID&gt;;
+
 
 </grammar></data></gals_file>
