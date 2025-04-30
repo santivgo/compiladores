@@ -84,8 +84,8 @@ STRING: {ASPASDUPLAS} ({LETRA}|{DIGITO}|{ESPECIAL}|{OP})+{ASPASDUPLAS}
 &lt;COD&gt;
 &lt;ATR&gt; 
 &lt;EXP&gt;
-&lt;ESCREVA&gt;
 &lt;LEIA&gt;
+&lt;ESCREVA&gt;
 &lt;MASCARA&gt;
 &lt;ID&gt;
 &lt;ENTRADA&gt;
@@ -95,7 +95,8 @@ STRING: {ASPASDUPLAS} ({LETRA}|{DIGITO}|{ESPECIAL}|{OP})+{ASPASDUPLAS}
 
 </non_terminals><grammar>
 &lt;START&gt; ::= INICIO &lt;COD&gt; FIM;
-&lt;COD&gt; ::= &lt;ATR&gt; &lt;COD&gt;| &lt;ENTRADA&gt; &lt;COD&gt; | &lt;ESCREVA&gt; &lt;COD&gt; | &lt;ATR&gt; | &lt;ENTRADA&gt; | &lt;ESCREVA&gt;;
+&lt;COD&gt; ::= &lt;ATR&gt; &lt;COD&gt;| &lt;ENTRADA&gt; &lt;COD&gt; | &lt;ESCREVA&gt; &lt;COD&gt; | &lt;LEIA&gt; &lt;COD&gt; | &lt;ATR&gt; | &lt;ENTRADA&gt; | &lt;ESCREVA&gt; | &lt;LEIA&gt;;
+
 
 &lt;ATR&gt; ::= ID "=" &lt;EXP&gt;;
 &lt;EXP&gt; ::= &lt;EXP&gt; &lt;OP&gt; &lt;EXP&gt; | "(" &lt;EXP&gt; ")" | ID | INTEIRO | REAL;
@@ -103,14 +104,14 @@ STRING: {ASPASDUPLAS} ({LETRA}|{DIGITO}|{ESPECIAL}|{OP})+{ASPASDUPLAS}
 
 
 
-&lt;LEIA&gt; ::= LEIA "("&lt;ENTRADA&gt; ")";
+&lt;LEIA&gt; ::= LEIA "(" &lt;MASCARA&gt;"," &lt;ID&gt; ")";
 &lt;ESCREVA&gt; ::= ESCREVA "(" &lt;ENTRADA&gt; ")";
 
 &lt;ENTRADA&gt; ::= STRING "," &lt;ENTRADA&gt; | ID "," &lt;ENTRADA&gt; | STRING | ID;
 
 
-&lt;MASCARA&gt; ::= MASCARA &lt;MASCARA&gt; |MASCARA;
-&lt;ID&gt; ::= ID "," &lt;ID&gt; |&lt;ID&gt;;
+&lt;MASCARA&gt; ::= MASCARA &lt;MASCARA&gt; | MASCARA;
+&lt;ID&gt; ::= ID "," &lt;ID&gt;| ID;
 
 
 </grammar></data></gals_file>
