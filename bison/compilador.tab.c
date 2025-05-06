@@ -560,8 +560,8 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    23,    23,    25,    26,    27,    27,    30,    32,    33,
-      34,    35,    36,    37,    40
+       0,    23,    23,    25,    26,    27,    27,    30,    34,    35,
+      36,    37,    38,    39,    42
 };
 #endif
 
@@ -1146,50 +1146,58 @@ yyreduce:
 #line 1147 "compilador.tab.c"
     break;
 
+  case 7: /* atr: ID ATRIB exp  */
+#line 30 "compilador.y"
+                  {	
+	printf ("%s recebe %d\n",yyvsp[-2],yyvsp[0]);
+	}
+#line 1155 "compilador.tab.c"
+    break;
+
   case 8: /* exp: exp '+' exp  */
-#line 32 "compilador.y"
+#line 34 "compilador.y"
                  {yyval = yyvsp[-2] + yyvsp[0]; printf ("%d + %d = %d\n",yyvsp[-2],yyvsp[0],yyval);}
-#line 1153 "compilador.tab.c"
+#line 1161 "compilador.tab.c"
     break;
 
   case 9: /* exp: exp '-' exp  */
-#line 33 "compilador.y"
+#line 35 "compilador.y"
                      {yyval = yyvsp[-2] - yyvsp[0]; printf ("%d - %d = %d\n",yyvsp[-2],yyvsp[0],yyval);}
-#line 1159 "compilador.tab.c"
+#line 1167 "compilador.tab.c"
     break;
 
   case 10: /* exp: exp '*' exp  */
-#line 34 "compilador.y"
+#line 36 "compilador.y"
                      {yyval = yyvsp[-2] * yyvsp[0]; printf ("%d * %d = %d\n",yyvsp[-2],yyvsp[0],yyval);}
-#line 1165 "compilador.tab.c"
+#line 1173 "compilador.tab.c"
     break;
 
   case 11: /* exp: exp '/' exp  */
-#line 35 "compilador.y"
+#line 37 "compilador.y"
                      {yyval = yyvsp[-2] / yyvsp[0]; printf ("%d / %d = %d\n",yyvsp[-2],yyvsp[0],yyval);}
-#line 1171 "compilador.tab.c"
+#line 1179 "compilador.tab.c"
     break;
 
   case 12: /* exp: exp '^' exp  */
-#line 36 "compilador.y"
+#line 38 "compilador.y"
                      {yyval = (int)pow(yyvsp[-2], yyvsp[0]); printf ("%d ^ %d = %d\n",yyvsp[-2],yyvsp[0],yyval);}
-#line 1177 "compilador.tab.c"
+#line 1185 "compilador.tab.c"
     break;
 
   case 13: /* exp: valor  */
-#line 37 "compilador.y"
+#line 39 "compilador.y"
                {yyval = yyvsp[0];}
-#line 1183 "compilador.tab.c"
+#line 1191 "compilador.tab.c"
     break;
 
   case 14: /* valor: INTEGER  */
-#line 40 "compilador.y"
+#line 42 "compilador.y"
                {yyval = yyvsp[0];}
-#line 1189 "compilador.tab.c"
+#line 1197 "compilador.tab.c"
     break;
 
 
-#line 1193 "compilador.tab.c"
+#line 1201 "compilador.tab.c"
 
       default: break;
     }
@@ -1382,7 +1390,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 43 "compilador.y"
+#line 45 "compilador.y"
 
 
 #include "lex.yy.c"

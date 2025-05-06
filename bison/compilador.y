@@ -27,7 +27,9 @@ cod: exp cod {
 		| atr | exp {	printf ("Resultado: %d \n",$1);};
 
 
-atr: ID ATRIB exp;
+atr: ID ATRIB exp {	
+	printf ("%s recebe %d\n",$1,$3);
+	}
 
 exp: exp '+' exp {$$ = $1 + $3; printf ("%d + %d = %d\n",$1,$3,$$);}
 	|exp '-' exp {$$ = $1 - $3; printf ("%d - %d = %d\n",$1,$3,$$);}

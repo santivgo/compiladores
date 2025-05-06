@@ -40,13 +40,14 @@ IGNORAR         [" "\t\n\r]*
 
 
 {INTEGER}           {yylval = atoi(yytext); return INTEGER;}
-.                   { return yytext[0]; }
-
 "="                 return ATRIB;
 "+="                return MAISIGUAL;
 "-="                return MENOSIGUAL;
 "*="                return VEZESIGUAL;
 "/="                return DIVIGUAL;
+.                   { return yytext[0]; }
+
+
 
  /*
 {MASK}              {printf("achei uma mascara: %s\n", yytext);}

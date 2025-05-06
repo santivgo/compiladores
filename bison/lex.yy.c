@@ -362,8 +362,8 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[30] =
     {   0,
-        0,    0,   13,    6,    1,    1,    6,    6,    6,    6,
-        5,    6,    4,    4,    4,    1,   10,    8,    9,   11,
+        0,    0,   13,   11,    1,    1,   11,   11,   11,   11,
+        5,    6,    4,    4,    4,    1,    9,    7,    8,   10,
         4,    4,    4,    3,    4,    4,    4,    2,    0
     } ;
 
@@ -770,32 +770,32 @@ YY_RULE_SETUP
 case 6:
 YY_RULE_SETUP
 #line 44 "compilador.l"
-{ return yytext[0]; }
+return ATRIB;
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 46 "compilador.l"
-return ATRIB;
+#line 45 "compilador.l"
+return MAISIGUAL;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 47 "compilador.l"
-return MAISIGUAL;
+#line 46 "compilador.l"
+return MENOSIGUAL;
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 48 "compilador.l"
-return MENOSIGUAL;
+#line 47 "compilador.l"
+return VEZESIGUAL;
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 49 "compilador.l"
-return VEZESIGUAL;
+#line 48 "compilador.l"
+return DIVIGUAL;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 50 "compilador.l"
-return DIVIGUAL;
+#line 49 "compilador.l"
+{ return yytext[0]; }
 	YY_BREAK
 /*
 {MASK}              {printf("achei uma mascara: %s\n", yytext);}
@@ -820,7 +820,7 @@ return DIVIGUAL;
 */
 case 12:
 YY_RULE_SETUP
-#line 74 "compilador.l"
+#line 75 "compilador.l"
 ECHO;
 	YY_BREAK
 #line 827 "lex.yy.c"
@@ -1828,7 +1828,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 74 "compilador.l"
+#line 75 "compilador.l"
 
 
 
