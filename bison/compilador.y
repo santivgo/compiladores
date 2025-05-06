@@ -35,8 +35,8 @@ exp: exp '+' exp {$$ = $1 + $3; printf ("%d + %d = %d\n",$1,$3,$$);}
 	|exp '-' exp {$$ = $1 - $3; printf ("%d - %d = %d\n",$1,$3,$$);}
 	|exp '*' exp {$$ = $1 * $3; printf ("%d * %d = %d\n",$1,$3,$$);}
 	|exp '/' exp {$$ = $1 / $3; printf ("%d / %d = %d\n",$1,$3,$$);}
-	|exp '^' exp {$$ = (int)pow($1, $3); printf ("%d ^ %d = %d\n",$1,$3,$$);}
-	|valor {$$ = $1;}
+	|exp '^' exp {$$ = (int)pow($1, $3); printf ("%d ^ %d = %d\n",$1,$3,$$);} | atr
+	|valor {$$ = $1;} 
 	;
 
 valor: INTEGER {$$ = $1;}
