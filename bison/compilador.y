@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include <math.h>
  
 int yylex();
 void yyerror (char *s){
@@ -9,26 +10,30 @@ void yyerror (char *s){
 %}
 
 %token INTEGER
-%token FIM
 %token INICIO
+%token FIM
+%token ID
+%token ATRIB MAISIGUAL MENOSIGUAL VEZESIGUAL DIVIGUAL
 %left '+' '-'
-%left '*'
+%left '*' '/'
+%right '^'
 
 %%
 
-val: INICIO cod FIM
+val: INICIO cod FIM;
 
 cod: exp cod {
-		printf ("Resultado: %d \n",$1);
-	}
-	| exp {
-		printf ("Resultado: %d \n",$1);
-	}
-	;
+		printf ("Resultado: %d \n",$1);} | atr cod
+		| atr | exp {	printf ("Resultado: %d \n",$1);};
+
+
+atr: ID ATRIB exp;
 
 exp: exp '+' exp {$$ = $1 + $3; printf ("%d + %d = %d\n",$1,$3,$$);}
 	|exp '-' exp {$$ = $1 - $3; printf ("%d - %d = %d\n",$1,$3,$$);}
 	|exp '*' exp {$$ = $1 * $3; printf ("%d * %d = %d\n",$1,$3,$$);}
+	|exp '/' exp {$$ = $1 / $3; printf ("%d / %d = %d\n",$1,$3,$$);}
+	|exp '^' exp {$$ = (int)pow($1, $3); printf ("%d ^ %d = %d\n",$1,$3,$$);}
 	|valor {$$ = $1;}
 	;
 

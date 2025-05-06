@@ -7,7 +7,6 @@ FIM             "FIM"
 LEIA            "scanf"
 ESCREVA         "printf"
 TYPES           (int|bool|char|float|double|void)
-ATRIB           [\=|\+=|\-=|\*=|/=|]
 SIMB            (\+\+|\-\-|\+|\-)
 AGRUP           [\(|\)|\{|\}|\;|\,|\.|\&]
 LOGICO          [>|<|>=|<=|==|!=|\&\&|\|\|]
@@ -33,34 +32,21 @@ IGNORAR         [" "\t\n\r]*
 %%
  /*tokens*/
  
-{MASK}              {printf("achei uma mascara: %s\n", yytext);}
-{TYPES}             {printf("achei um tipo: %s\n", yytext);}
-{COMENTARIO}        {printf("achei um comentário: %s\n", yytext);}
-{COMENTARIO_MULTI}  {printf("achei um comentário multi: %s\n", yytext);}
-{SIMB}              {printf("achei um símbolo: %s\n", yytext);}
-{FUNCOES}           {printf("achei uma função: %s\n", yytext);}
-{LOOPS}             {printf("achei um loop: %s\n", yytext);}
-{CONDICIONAIS}      {printf("achei um condicional: %s\n", yytext);}
-{BOOLEANOS}         {printf("achei um valor booleano: %s\n", yytext);}
-{STRING}            {printf("achei uma string: %s\n", yytext);}
+[ \t\r\n]+            ;
 
-
-{INICIO}            {printf("achei um INICIO: %s\n", yytext);}
-{FIM}               {return INICIO;}
-
-{FIM}               {printf("achei um FIM: %s\n", yytext);}
+{INICIO}            {return INICIO;}
 {FIM}               {return FIM;}
+{ID}                {return ID;}
 
-{ID}                {printf("achei um identificador: %s\n", yytext);}
+
 {INTEGER}           {yylval = atoi(yytext); return INTEGER;}
+.                   { return yytext[0]; }
 
-{DECIMAL}           {printf("achei um número decimal: %s\n", yytext);}
-{NUM}               {printf("achei um número: %s\n", yytext);}
-{ATRIB}             {printf("achei um atrib: %s\n", yytext);}
-{AGRUP}             {printf("achei um agrupador: %s\n", yytext);}
-{LOGICO}            {printf("achei um operador lógico: %s\n", yytext);}
-{ASPASDUPLAS}       {printf("achei uma aspa dupla: %s\n", yytext);}
-
+"="                 return ATRIB;
+"+="                return MAISIGUAL;
+"-="                return MENOSIGUAL;
+"*="                return VEZESIGUAL;
+"/="                return DIVIGUAL;
 
  /*
 {MASK}              {printf("achei uma mascara: %s\n", yytext);}
@@ -85,6 +71,9 @@ IGNORAR         [" "\t\n\r]*
 */
 
 %%
+
+
+int yywrap(void) { return 1; }
 
 /*** Tokens ***/
 // int main(void)
