@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <math.h>
  
+float var[26];
+
 int yylex();
 void yyerror (char *s){
 	printf("%s\n", s);
@@ -9,37 +11,48 @@ void yyerror (char *s){
 
 %}
 
-%token INTEGER
+%union{
+	float flo;
+	int inte;
+}
+
+%token <flo> NUM 
+%token <inte> VAR
 %token INICIO
 %token FIM
-%token ID
-%token ATRIB MAISIGUAL MENOSIGUAL VEZESIGUAL DIVIGUAL
+%token ESCREVA
+%token LEIA
 %left '+' '-'
 %left '*' '/'
 %right '^'
+%right NEG
+
+%type <flo> exp
+%type <flo> valor
 
 %%
 
-val: INICIO cod FIM;
+prog: INICIO cod FIM;
 
-cod: exp cod {
-		printf ("Resultado: %d \n",$1);} | atr cod
-		| atr | exp {	printf ("Resultado: %d \n",$1);};
+cod: cod cmdos |;
+cmdos: ESCREVA '(' exp ')' {
+	printf("%.2f \n", $3);
+} | VAR '=' exp {	
+	var[$1] = $3;
+	};
 
-
-atr: ID ATRIB exp {	
-	printf ("%s recebe %d\n",$1,$3);
-	}
-
-exp: exp '+' exp {$$ = $1 + $3; printf ("%d + %d = %d\n",$1,$3,$$);}
-	|exp '-' exp {$$ = $1 - $3; printf ("%d - %d = %d\n",$1,$3,$$);}
-	|exp '*' exp {$$ = $1 * $3; printf ("%d * %d = %d\n",$1,$3,$$);}
-	|exp '/' exp {$$ = $1 / $3; printf ("%d / %d = %d\n",$1,$3,$$);}
-	|exp '^' exp {$$ = (int)pow($1, $3); printf ("%d ^ %d = %d\n",$1,$3,$$);} | atr
-	|valor {$$ = $1;} 
+exp: exp '+' exp {$$ = $1 + $3;}
+	|exp '-' exp {$$ = $1 - $3;}
+	|exp '*' exp {$$ = $1 * $3;}
+	|exp '/' exp {$$ = $1 / $3;}
+	|'(' exp ')' {$$ = $2;}
+	|exp '^' exp {$$ = pow($1,$3);}
+	|'-' exp %prec NEG {$$ = -$2;}
+	|valor {$$ = $1;}
+	|VAR {$$ = var[$1];}
 	;
 
-valor: INTEGER {$$ = $1;}
+valor: NUM {$$ = $1;}
 	;
 
 %%

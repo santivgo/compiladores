@@ -16,10 +16,11 @@ INTEGER         [0-9]
 ALNUM           [A-Za-z0-9_]
 ESPECIAL        (" "| "_")
 MASK            ({ASPASDUPLAS}\%(\.{NUM}+)?[d|s|f|i]{ASPASDUPLAS})
+NUM             {INTEGER}\.?{INTEGER}*
 DECIMAL         ({INTEGER}?\.{INTEGER}+)
-NUM             ({INTEGER}+|{DECIMAL})
 STRING          {ASPASDUPLAS}(.)*{ASPASDUPLAS}
 ID              [A-Za-z_][A-Za-z0-9_]*
+VAR             [A-Za-z_]
 CONDICIONAIS    (if)|(else)|(elif)
 LOOPS           (for)|(while)|(do)
 BOOLEANOS       (true)|(false)
@@ -30,21 +31,16 @@ DESC            [ \n\t]
 IGNORAR         [" "\t\n\r]*
 
 %%
- /*tokens*/
+    /*tokens*/
  
 [ \t\r\n]+            ;
-
 {INICIO}            {return INICIO;}
 {FIM}               {return FIM;}
-{ID}                {return ID;}
-
-
-{INTEGER}           {yylval = atoi(yytext); return INTEGER;}
-"="                 return ATRIB;
-"+="                return MAISIGUAL;
-"-="                return MENOSIGUAL;
-"*="                return VEZESIGUAL;
-"/="                return DIVIGUAL;
+{VAR}               {yylval.inte = *yytext - 'a'; return VAR;}
+{NUM}               {yylval.flo = atof(yytext); return NUM;}
+LEIA                {return LEIA;}
+ESCREVA             {return ESCREVA;}
+[-+()=/*^]          {return *yytext;}
 .                   { return yytext[0]; }
 
 
