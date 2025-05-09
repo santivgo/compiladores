@@ -35,11 +35,17 @@ void yyerror (char *s){
 prog: INICIO cod FIM;
 
 cod: cod cmdos |;
-cmdos: ESCREVA '(' exp ')' {
-	printf("%.2f \n", $3);
-} | VAR '=' exp {	
-	var[$1] = $3;
-	};
+cmdos:
+    ESCREVA '(' exp ')' {
+        printf("%.2f \n", $3);
+    }
+  | LEIA '(' VAR ')' {
+        printf("Valor de '%c': ", $3 + 'a');
+        scanf("%f", &var[$3]);
+    }
+  | VAR '=' exp {
+        var[$1] = $3;
+    };
 
 exp: exp '+' exp {$$ = $1 + $3;}
 	|exp '-' exp {$$ = $1 - $3;}

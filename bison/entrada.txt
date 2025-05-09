@@ -1,4 +1,6 @@
 INICIO
-a=3*3*4
+scanf(a)
 printf(a)
+a=3*3*4
+
 FIM

@@ -38,10 +38,11 @@ IGNORAR         [" "\t\n\r]*
 {FIM}               {return FIM;}
 {VAR}               {yylval.inte = *yytext - 'a'; return VAR;}
 {NUM}               {yylval.flo = atof(yytext); return NUM;}
-LEIA                {return LEIA;}
-ESCREVA             {return ESCREVA;}
+"scanf"             {return LEIA;}
+"printf"             {return ESCREVA;}
 [-+()=/*^]          {return *yytext;}
-.                   { return yytext[0]; }
+.   { printf("Caractere inválido: %s\n", yytext); return 0; }
+
 
 
 
