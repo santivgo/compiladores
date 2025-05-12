@@ -52,7 +52,10 @@ cmdos:
 
 str:  STRING { printf("%s\n", $1); free($1); };
 
-saidas: str "," saidas | exp "," saidas { printf("Número: %2.f\n", $1); } | str | exp {printf("Número: %2.f\n", $1);} ;
+saidas: str "," saidas |
+ exp "," saidas { printf("%2.f\n", $1); } 
+ |  str 
+ | exp {printf("Número: %2.f\n", $1);} ;
 
 exp: exp '+' exp {$$ = $1 + $3;}
 	|exp '-' exp {$$ = $1 - $3;}

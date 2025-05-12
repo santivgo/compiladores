@@ -580,8 +580,8 @@ static const yytype_int8 yytranslate[] =
 static const yytype_int8 yyrline[] =
 {
        0,    40,    40,    42,    42,    44,    45,    49,    53,    55,
-      55,    55,    55,    57,    58,    59,    60,    61,    62,    63,
-      64,    65,    68
+      56,    57,    58,    60,    61,    62,    63,    64,    65,    66,
+      67,    68,    71
 };
 #endif
 
@@ -1189,73 +1189,73 @@ yyreduce:
     break;
 
   case 10: /* saidas: exp "," saidas  */
-#line 55 "compilador.y"
-                                        { printf("Número: %2.f\n", (yyvsp[-2].flo)); }
+#line 56 "compilador.y"
+                { printf("%2.f\n", (yyvsp[-2].flo)); }
 #line 1195 "compilador.tab.c"
     break;
 
   case 12: /* saidas: exp  */
-#line 55 "compilador.y"
-                                                                                      {printf("Número: %2.f\n", (yyvsp[0].flo));}
+#line 58 "compilador.y"
+       {printf("Número: %2.f\n", (yyvsp[0].flo));}
 #line 1201 "compilador.tab.c"
     break;
 
   case 13: /* exp: exp '+' exp  */
-#line 57 "compilador.y"
+#line 60 "compilador.y"
                  {(yyval.flo) = (yyvsp[-2].flo) + (yyvsp[0].flo);}
 #line 1207 "compilador.tab.c"
     break;
 
   case 14: /* exp: exp '-' exp  */
-#line 58 "compilador.y"
+#line 61 "compilador.y"
                      {(yyval.flo) = (yyvsp[-2].flo) - (yyvsp[0].flo);}
 #line 1213 "compilador.tab.c"
     break;
 
   case 15: /* exp: exp '*' exp  */
-#line 59 "compilador.y"
+#line 62 "compilador.y"
                      {(yyval.flo) = (yyvsp[-2].flo) * (yyvsp[0].flo);}
 #line 1219 "compilador.tab.c"
     break;
 
   case 16: /* exp: exp '/' exp  */
-#line 60 "compilador.y"
+#line 63 "compilador.y"
                      {(yyval.flo) = (yyvsp[-2].flo) / (yyvsp[0].flo);}
 #line 1225 "compilador.tab.c"
     break;
 
   case 17: /* exp: '(' exp ')'  */
-#line 61 "compilador.y"
+#line 64 "compilador.y"
                      {(yyval.flo) = (yyvsp[-1].flo);}
 #line 1231 "compilador.tab.c"
     break;
 
   case 18: /* exp: exp '^' exp  */
-#line 62 "compilador.y"
+#line 65 "compilador.y"
                      {(yyval.flo) = pow((yyvsp[-2].flo),(yyvsp[0].flo));}
 #line 1237 "compilador.tab.c"
     break;
 
   case 19: /* exp: '-' exp  */
-#line 63 "compilador.y"
+#line 66 "compilador.y"
                            {(yyval.flo) = -(yyvsp[0].flo);}
 #line 1243 "compilador.tab.c"
     break;
 
   case 20: /* exp: valor  */
-#line 64 "compilador.y"
+#line 67 "compilador.y"
                {(yyval.flo) = (yyvsp[0].flo);}
 #line 1249 "compilador.tab.c"
     break;
 
   case 21: /* exp: VAR  */
-#line 65 "compilador.y"
+#line 68 "compilador.y"
              {(yyval.flo) = var[(yyvsp[0].inte)];}
 #line 1255 "compilador.tab.c"
     break;
 
   case 22: /* valor: NUM  */
-#line 68 "compilador.y"
+#line 71 "compilador.y"
            {(yyval.flo) = (yyvsp[0].flo);}
 #line 1261 "compilador.tab.c"
     break;
@@ -1454,7 +1454,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 71 "compilador.y"
+#line 74 "compilador.y"
 
 
 #include "lex.yy.c"

@@ -2,7 +2,7 @@ INICIO
 scanf(a)
 printf(a)
 a=a*4
-printf("olá")
+printf(a)
 
 
 FIM
