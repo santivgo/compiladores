@@ -18,7 +18,6 @@ ESPECIAL        (" "| "_")
 MASK            ({ASPASDUPLAS}\%(\.{NUM}+)?[d|s|f|i]{ASPASDUPLAS})
 NUM             {INTEGER}\.?{INTEGER}*
 DECIMAL         ({INTEGER}?\.{INTEGER}+)
-STRING          {ASPASDUPLAS}(.)*{ASPASDUPLAS}
 ID              [A-Za-z_][A-Za-z0-9_]*
 VAR             [A-Za-z_]
 CONDICIONAIS    (if)|(else)|(elif)
@@ -39,7 +38,9 @@ IGNORAR         [" "\t\n\r]*
 {VAR}               {yylval.inte = *yytext - 'a'; return VAR;}
 {NUM}               {yylval.flo = atof(yytext); return NUM;}
 "scanf"             {return LEIA;}
-"printf"             {return ESCREVA;}
+"printf"            {return ESCREVA;}
+\"([^\"\\]|\\.)*\"  { yylval.str = strdup(yytext); return STRING; }
+
 [-+()=/*^]          {return *yytext;}
 .   { printf("Caractere inválido: %s\n", yytext); return 0; }
 

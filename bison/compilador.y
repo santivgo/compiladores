@@ -11,6 +11,10 @@ void yyerror (char *s){
 
 %}
 
+%union {
+    char* str;
+}
+
 %union{
 	float flo;
 	int inte;
@@ -22,6 +26,7 @@ void yyerror (char *s){
 %token FIM
 %token ESCREVA
 %token LEIA
+%token <str> STRING
 %left '+' '-'
 %left '*' '/'
 %right '^'
@@ -36,16 +41,18 @@ prog: INICIO cod FIM;
 
 cod: cod cmdos |;
 cmdos:
-    ESCREVA '(' exp ')' {
-        printf("%.2f \n", $3);
-    }
+    ESCREVA '(' saidas ')'
   | LEIA '(' VAR ')' {
         printf("Valor de '%c': ", $3 + 'a');
         scanf("%f", &var[$3]);
     }
   | VAR '=' exp {
         var[$1] = $3;
-    };
+	} ; 
+
+str:  STRING { printf("%s\n", $1); free($1); };
+
+saidas: str "," saidas | exp "," saidas { printf("Número: %2.f\n", $1); } | str | exp {printf("Número: %2.f\n", $1);} ;
 
 exp: exp '+' exp {$$ = $1 + $3;}
 	|exp '-' exp {$$ = $1 - $3;}
