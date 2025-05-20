@@ -40,6 +40,7 @@ IGNORAR         [" "\t\n\r]*
 "scanf"             {return LEIA;}
 "printf"            {return ESCREVA;}
 \"([^\"\\]|\\.)*\"  { yylval.str = strdup(yytext); return STRING; }
+"printf"             {return ESCREVA;}
 
 [-+()=/*^]          {return *yytext;}
 .   { printf("Caractere inválido: %s\n", yytext); return 0; }

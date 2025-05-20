@@ -18,10 +18,12 @@ void yyerror (char *s){
 %union{
 	float flo;
 	int inte;
+	char *str;
 }
 
 %token <flo> NUM 
 %token <inte> VAR
+
 %token INICIO
 %token FIM
 %token ESCREVA
@@ -34,6 +36,8 @@ void yyerror (char *s){
 
 %type <flo> exp
 %type <flo> valor
+%type <str> valor_str
+
 
 %%
 
@@ -67,6 +71,10 @@ exp: exp '+' exp {$$ = $1 + $3;}
 	|valor {$$ = $1;}
 	|VAR {$$ = var[$1];}
 	;
+	
+valor_str: STRING { $$ = $1; }
+         | VAR    { $$ = var_str[$1]; }
+         ;
 
 valor: NUM {$$ = $1;}
 	;
