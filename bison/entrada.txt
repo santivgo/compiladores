@@ -1,8 +1,8 @@
 INICIO
-scanf(a)
-printf(a)
-a=a*4
-printf(a)
 
+a="oi"
+printf(a)
+b=3
+printf(b)
 
 FIM
