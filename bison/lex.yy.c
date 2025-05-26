@@ -351,8 +351,8 @@ static void yynoreturn yy_fatal_error ( const char* msg  );
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 11
-#define YY_END_OF_BUFFER 12
+#define YY_NUM_RULES 12
+#define YY_END_OF_BUFFER 13
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -362,7 +362,7 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[38] =
     {   0,
-        0,    0,   12,   10,    1,    1,   10,    9,    5,    4,
+        0,    0,   13,   11,    1,    1,   11,   10,    5,    4,
         4,    4,    4,    4,    1,    0,    8,    0,    5,    5,
         0,    0,    0,    0,    3,    0,    0,    0,    0,    0,
         0,    0,    0,    6,    2,    7,    0
@@ -799,12 +799,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 45 "compilador.l"
-{return *yytext;}
+#line 44 "compilador.l"
+{return ESCREVA;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
 #line 46 "compilador.l"
+{return *yytext;}
+	YY_BREAK
+case 11:
+YY_RULE_SETUP
+#line 47 "compilador.l"
 { printf("Caractere inválido: %s\n", yytext); return 0; }
 	YY_BREAK
 /*
@@ -828,12 +833,12 @@ YY_RULE_SETUP
 {LOGICO}            {printf("achei um operador lógico: %s\n", yytext);}
 {ASPASDUPLAS}       {printf("achei uma aspa dupla: %s\n", yytext);}
 */
-case 11:
+case 12:
 YY_RULE_SETUP
-#line 73 "compilador.l"
+#line 74 "compilador.l"
 ECHO;
 	YY_BREAK
-#line 837 "lex.yy.c"
+#line 842 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1838,7 +1843,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 73 "compilador.l"
+#line 74 "compilador.l"
 
 
 
