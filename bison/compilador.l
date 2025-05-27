@@ -20,12 +20,12 @@ NUM             {INTEGER}\.?{INTEGER}*
 DECIMAL         ({INTEGER}?\.{INTEGER}+)
 ID              [A-Za-z_][A-Za-z0-9_]*
 VAR             [A-Za-z_]
-CONDICIONAIS    (if)|(else)|(elif)
-LOOPS           (for)|(while)|(do)
+IF              "IF"
+ELSE            "ELSE"
+WHILE           "WHILE"
 BOOLEANOS       (true)|(false)
 COMENTARIO       \/\/[^\n\r]*
 COMENTARIO_MULTI "/*"([^*]|\*+[^*/])*\*+"/"
-FUNCOES         (printf)|(scanf)
 DESC            [ \n\t]
 IGNORAR         [" "\t\n\r]*
 
@@ -37,13 +37,27 @@ IGNORAR         [" "\t\n\r]*
 {FIM}               {return FIM;}
 {VAR}               {yylval.inte = *yytext - 'a'; return VAR;}
 {NUM}               {yylval.flo = atof(yytext); return NUM;}
-"scanf"             {return LEIA;}
-"printf"            {return ESCREVA;}
+{LEIA}            {return LEIA;}
+{ESCREVA}            {return ESCREVA;}
 \"([^\"\\]|\\.)*\"  { yylval.str = strdup(yytext); return STRING; }
-"printf"             {return ESCREVA;}
 
 [-+()=/*^]          {return *yytext;}
 .   { printf("Caractere inválido: %s\n", yytext); return 0; }
+
+
+
+
+">" {yylval.fn = 1; return CMP; }
+"<" {yylval.fn = 2; return CMP; }
+"<>" {yylval.fn = 3; return CMP; }
+"==" {yylval.fn = 4; return CMP; }
+">=" {yylval.fn = 5; return CMP; }
+"<=" {yylval.fn = 6; return CMP; }
+
+
+{IF} {return IF;}
+{ELSE} {return ELSE;}
+{WHILE} {return WHILE;}
 
 
 
