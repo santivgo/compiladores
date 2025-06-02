@@ -1,51 +1,31 @@
 %{
-    #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 %}
 
-INICIO          "INICIO"
-FIM             "FIM"
-LEIA            "scanf"
-ESCREVA         "printf"
-TYPES           (int|bool|char|float|double|void)
-SIMB            (\+\+|\-\-|\+|\-)
-AGRUP           [\(|\)|\{|\}|\;|\,|\.|\&]
-LOGICO          [>|<|>=|<=|==|!=|\&\&|\|\|]
-ASPASDUPLAS     \"
-CHAR            [A-Za-z_]
-INTEGER         [0-9]
-ALNUM           [A-Za-z0-9_]
-ESPECIAL        (" "| "_")
-MASK            ({ASPASDUPLAS}\%(\.{NUM}+)?[d|s|f|i]{ASPASDUPLAS})
-NUM             {INTEGER}\.?{INTEGER}*
-DECIMAL         ({INTEGER}?\.{INTEGER}+)
-ID              [A-Za-z_][A-Za-z0-9_]*
-VAR             [A-Za-z_]
-IF              "IF"
-ELSE            "ELSE"
-WHILE           "WHILE"
-BOOLEANOS       (true)|(false)
-COMENTARIO       \/\/[^\n\r]*
-COMENTARIO_MULTI "/*"([^*]|\*+[^*/])*\*+"/"
-DESC            [ \n\t]
-IGNORAR         [" "\t\n\r]*
+DIGITO      [0-9]
+LETRA       [a-zA-Z]
+ID          {LETRA}
+NUM         {DIGITO}+(\.{DIGITO}+)?
+STRING      \"([^\"\\]|\\.)*\"
 
 %%
-    /*tokens*/
- 
-[ \t\r\n]+            ;
-{INICIO}            {return INICIO;}
-{FIM}               {return FIM;}
-{VAR}               {yylval.inte = *yytext - 'a'; return VAR;}
-{NUM}               {yylval.flo = atof(yytext); return NUM;}
-{LEIA}            {return LEIA;}
-{ESCREVA}            {return ESCREVA;}
-\"([^\"\\]|\\.)*\"  { yylval.str = strdup(yytext); return STRING; }
 
-[-+()=/*^]          {return *yytext;}
-.   { printf("Caractere inválido: %s\n", yytext); return 0; }
+[ \t\r\n]+              ;  // ignora espaços e quebras de linha
 
+"INICIO"                { return INICIO; }
+"FIM"                   { return FIM; }
+"IF"                    { return IF; }
+"ELSE"                  { return ELSE; }
+"WHILE"                 { return WHILE; }
+"printf"                { return ESCREVA; }
+"scanf"                 { return LEIA; }
 
+{ID}                    { yylval.inte = *yytext - 'a'; return VAR; }
 
+{NUM}                   { yylval.flo = atof(yytext); return NUM; }
+
+{STRING}                { yylval.str = strdup(yytext); return STRING; }
 
 ">" {yylval.fn = 1; return CMP; }
 "<" {yylval.fn = 2; return CMP; }
@@ -55,51 +35,22 @@ IGNORAR         [" "\t\n\r]*
 "<=" {yylval.fn = 6; return CMP; }
 
 
-{IF} {return IF;}
-{ELSE} {return ELSE;}
-{WHILE} {return WHILE;}
+"="                     { return '='; }
+"+"                     { return '+'; }
+"-"                     { return '-'; }
+"*"                     { return '*'; }
+"/"                     { return '/'; }
+"^"                     { return '^'; }
 
+"("                     { return '('; }
+")"                     { return ')'; }
+"{"                     { return '{'; }
+"}"                     { return '}'; }
+","                     { return ','; }
+";"                     { return ';'; }
 
-
-
- /*
-{MASK}              {printf("achei uma mascara: %s\n", yytext);}
-{TYPES}             {printf("achei um tipo: %s\n", yytext);}
-{COMENTARIO}        {printf("achei um comentário: %s\n", yytext);}
-{COMENTARIO_MULTI}  {printf("achei um comentário multi: %s\n", yytext);}
-{SIMB}              {printf("achei um símbolo: %s\n", yytext);}
-{FUNCOES}           {printf("achei uma função: %s\n", yytext);}
-{LOOPS}             {printf("achei um loop: %s\n", yytext);}
-{CONDICIONAIS}      {printf("achei um condicional: %s\n", yytext);}
-{BOOLEANOS}         {printf("achei um valor booleano: %s\n", yytext);}
-{STRING}            {printf("achei uma string: %s\n", yytext);}
-{FIM}               {printf("achei um FIM: %s\n", yytext);}
-{ID}                {printf("achei um identificador: %s\n", yytext);}
-{INTEGER}           {printf("achei um número integer: %s\n", yytext);}
-{DECIMAL}           {printf("achei um número decimal: %s\n", yytext);}
-{NUM}               {printf("achei um número: %s\n", yytext);}
-{ATRIB}             {printf("achei um atrib: %s\n", yytext);}
-{AGRUP}             {printf("achei um agrupador: %s\n", yytext);}
-{LOGICO}            {printf("achei um operador lógico: %s\n", yytext);}
-{ASPASDUPLAS}       {printf("achei uma aspa dupla: %s\n", yytext);}
-*/
+.                       { printf("Caractere inválido: %s\n", yytext); return 0; }
 
 %%
 
-
-int yywrap(void) { return 1; }
-
-/*** Tokens ***/
-// int main(void)
-// {   
-    
-//     FILE *file = fopen("teste.c", "r");
-//     YY_BUFFER_STATE buffer = yy_create_buffer(file, YY_BUF_SIZE);
-//     yy_switch_to_buffer(buffer); // Muda o buffer para o arquivo
-
-//     yylex();
-//     fclose(file); // Fecha o arquivo após a análise
-
-//     yy_delete_buffer(buffer);
-//     return 0;
-// }
+int yywrap() { return 1; }
