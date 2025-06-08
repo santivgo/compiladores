@@ -1,8 +1,16 @@
-INICIO
+a = "Hello World\n"
+b = "Teste de string\n"
+c = 10
 
-a="oi"
-printf(a)
-b=3
-printf(b)
+PRINT(a)
+PRINT(b) 
+PRINT(c)
+PRINT("\n")
+
+IF(c > 5) {
+    PRINT("c é maior que 5\n")
+    PRINT("Valor de c:")
+    PRINT(c)
+}
 
 FIM

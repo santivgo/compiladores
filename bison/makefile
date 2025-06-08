@@ -1,6 +1,6 @@
-all: compilador.l
+all : ast.l ast.y
 	clear
-	flex -i compilador.l
-	bison compilador.y
-	gcc compilador.tab.c -o compilador -lfl -lm
-	./compilador
+	flex -i ast.l
+	bison ast.y
+	gcc ast.tab.c -o analisador -lfl -lm
+	./analisador
