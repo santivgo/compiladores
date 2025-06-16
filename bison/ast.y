@@ -4,7 +4,8 @@
 #include <math.h>
 #include <string.h> 
 
- 
+#define MAX_ARRAY_SIZE 100
+
 /*O nodetype serve para indicar o tipo de nó que está na árvore. Isso serve para a função eval() entender o que realizar naquele nó*/
  
 typedef struct ast { /*Estrutura de um nó*/
@@ -28,8 +29,20 @@ typedef struct varval { /*Estrutura de um nome de variável, nesse exemplo uma v
 	int var;
 }Varval;
 
+typedef struct arrayval {
+	int nodetype;
+	int var;        // qual array (a, b, c, etc.)
+	Ast *index;     // expressão do índice
+}Arrayval;
 
-typedef struct flow { /*Estrutura de um desvio (if/else/while)*/
+typedef struct arrayasgn {
+	int nodetype;
+	int var;        // qual array
+	Ast *index;     // expressão do índice
+	Ast *value;     // valor a ser atribuído
+}Arrayasgn;
+
+typedef struct flow {
 	int nodetype;
 	Ast *cond;		/*condição*/
 	Ast *tl;		/*then, ou seja, verdade*/
@@ -42,8 +55,10 @@ typedef struct symasgn { /*Estrutura para um nó de atribuição. Para atrubuir 
 	Ast *v;
 }Symasgn;
 
-double var[26]; /*Variáveis*/
-char* str_var[26];    // NOVO ARRAY PARA VARIÁVEIS STRING
+double var[26][MAX_ARRAY_SIZE];     // var[variável][índice]
+char* str_var[26][MAX_ARRAY_SIZE];  // str_var[variável][índice]
+
+int array_sizes[26];  // tamanho atual de cada array
 int aux;
 
 Ast * newstr(char* s) {
@@ -54,6 +69,32 @@ Ast * newstr(char* s) {
 	}
 	a->nodetype = 'S';  // 'S' para string
 	a->string = strdup(s);  // duplica a string
+	return (Ast*)a;
+}
+
+Ast * newarrayval(int var, Ast *index) {
+	Arrayval *a = (Arrayval*) malloc(sizeof(Arrayval));
+	if(!a) {
+		printf("out of space");
+		exit(0);
+	}
+	a->nodetype = 'A';  // 'A' para array access
+	a->var = var;
+	a->index = index;
+	return (Ast*)a;
+}
+
+// NOVA FUNÇÃO PARA CRIAR NÓ DE ATRIBUIÇÃO EM ARRAY
+Ast * newarrayasgn(int var, Ast *index, Ast *value) {
+	Arrayasgn *a = (Arrayasgn*) malloc(sizeof(Arrayasgn));
+	if(!a) {
+		printf("out of space");
+		exit(0);
+	}
+	a->nodetype = 'R';  // 'R' para array assignment
+	a->var = var;
+	a->index = index;
+	a->value = value;
 	return (Ast*)a;
 }
 
@@ -134,6 +175,7 @@ Ast * newValorVal(int s) { /*Função que recupera o nome/referência de uma var
 
 
 
+
 double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 	double v; 
 	if(!a) {
@@ -143,14 +185,68 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 	switch(a->nodetype) {
 		case 'K': v = ((Numval *)a)->number; break; 	/*Recupera um número*/
 		case 'N': 
-			// Verifica se existe uma string armazenada nesta variável
-			if (str_var[((Varval *)a)->var] != NULL) {
-				printf("%s", str_var[((Varval *)a)->var]);
+			// Verifica se existe uma string armazenada nesta variável (índice 0)
+			if (str_var[((Varval *)a)->var][0] != NULL) {
+				printf("%s", str_var[((Varval *)a)->var][0]);
 				v = 0.0;
 			} else {
-				v = var[((Varval *)a)->var]; // número
+				v = var[((Varval *)a)->var][0]; // número (índice 0)
 			}
 			break;
+		
+		// NOVO CASO PARA ACESSO A ARRAYS
+		case 'A': {
+			int var_index = ((Arrayval *)a)->var;
+			int array_index = (int)eval(((Arrayval *)a)->index);
+			
+			if (array_index < 0 || array_index >= MAX_ARRAY_SIZE) {
+				printf("Erro: índice do array fora dos limites\n");
+				v = 0.0;
+			} else {
+				// Verifica se é uma string ou número
+				if (str_var[var_index][array_index] != NULL) {
+					printf("%s", str_var[var_index][array_index]);
+					v = 0.0;
+				} else {
+					v = var[var_index][array_index];
+				}
+			}
+			break;
+		}
+		
+		// NOVO CASO PARA ATRIBUIÇÃO EM ARRAYS
+		case 'R': {
+			int var_index = ((Arrayasgn *)a)->var;
+			int array_index = (int)eval(((Arrayasgn *)a)->index);
+			
+			if (array_index < 0 || array_index >= MAX_ARRAY_SIZE) {
+				printf("Erro: índice do array fora dos limites\n");
+				v = 0.0;
+			} else {
+				if (((Arrayasgn *)a)->value->nodetype == 'S') {
+					// Atribuição de string
+					if (str_var[var_index][array_index]) 
+						free(str_var[var_index][array_index]);
+					str_var[var_index][array_index] = strdup(((Strval *)((Arrayasgn *)a)->value)->string);
+					v = 0.0;
+				} else {
+					// Atribuição de número
+					v = eval(((Arrayasgn *)a)->value);
+					var[var_index][array_index] = v;
+					// Limpa string se existir
+					if (str_var[var_index][array_index]) {
+						free(str_var[var_index][array_index]);
+						str_var[var_index][array_index] = NULL;
+					}
+				}
+				// Atualiza tamanho do array se necessário
+				if (array_index >= array_sizes[var_index]) {
+					array_sizes[var_index] = array_index + 1;
+				}
+			}
+			break;
+		}
+		
 		case '+': v = eval(a->l) + eval(a->r); break;	/*Operações "árv esq   +   árv dir"*/
 		case '-': v = eval(a->l) - eval(a->r); break;	/*Operações*/
 		case '*': v = eval(a->l) * eval(a->r); break;	/*Operações*/
@@ -172,13 +268,13 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 		case '=':
 			if (((Symasgn *)a)->v->nodetype == 'S') {
 				aux = ((Symasgn *)a)->s;
-				if (str_var[aux]) free(str_var[aux]);  // libera string anterior
-				str_var[aux] = strdup(((Strval *)((Symasgn *)a)->v)->string);
+				if (str_var[aux][0]) free(str_var[aux][0]);  // libera string anterior
+				str_var[aux][0] = strdup(((Strval *)((Symasgn *)a)->v)->string);
 				v = 0.0;
 			} else {
 				v = eval(((Symasgn *)a)->v); /*Recupera o valor*/
 				aux = ((Symasgn *)a)->s;	/*Recupera o símbolo/variável*/
-				var[aux] = v;				/*Atribui à variável*/
+				var[aux][0] = v;				/*Atribui à variável (índice 0)*/
 			}
 			break;
 		
@@ -197,11 +293,9 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 			break;
 			
 		case 'W':
-			//printf ("WHILE\n");
 			v = 0.0;
 			if( ((Flow *)a)->tl) {
 				while( eval(((Flow *)a)->cond) != 0){
-					//printf ("VERDADE\n");
 					v = eval(((Flow *)a)->tl);
 					}
 			}
@@ -209,20 +303,24 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 			
 		case 'L': eval(a->l); v = eval(a->r); break; /*Lista de operções em um bloco IF/ELSE/WHILE. Assim o analisador não se perde entre os blocos*/
 		
-			case 'P':
-			// CORREÇÃO: Melhor tratamento para PRINT
+		case 'P':
+			// PRINT com suporte a arrays
 			if (a->l->nodetype == 'S') {
 				// String literal
 				eval(a->l);  // Já imprime a string
 				v = 0.0;
 			} else if (a->l->nodetype == 'N') {
-				// Variável - pode ser string ou número
+				// Variável - pode ser string ou número (índice 0)
 				int var_index = ((Varval *)a->l)->var;
-				if (str_var[var_index] != NULL) {
-					printf("%s", str_var[var_index]);
+				if (str_var[var_index][0] != NULL) {
+					printf("%s", str_var[var_index][0]);
 				} else {
-					printf("%.2f", var[var_index]);
+					printf("%.2f", var[var_index][0]);
 				}
+				v = 0.0;
+			} else if (a->l->nodetype == 'A') {
+				// Acesso a array
+				eval(a->l);  // Já imprime o valor
 				v = 0.0;
 			} else {
 				// Expressão numérica
@@ -282,6 +380,7 @@ stmt: IF '(' exp ')' '{' list '}' %prec IFX {$$ = newflow('I', $3, $6, NULL);}
 	| IF '(' exp ')' '{' list '}' ELSE '{' list '}' {$$ = newflow('I', $3, $6, $10);}
 	| WHILE '(' exp ')' '{' list '}' {$$ = newflow('W', $3, $6, NULL);}
 	| VARS '=' exp {$$ = newasgn($1,$3);}
+	| VARS '[' exp ']' '=' exp {$$ = newarrayasgn($1, $3, $6);}  
 	| PRINT '(' exp ')' { $$ = newast('P',$3,NULL);}
 	;
 
@@ -300,6 +399,7 @@ exp:
 	|'-' exp %prec NEG {$$ = newast('M',$2,NULL);}
 	|NUM {$$ = newnum($1);}						/*token de um número*/
 	|VARS {$$ = newValorVal($1);}				/*token de uma variável*/
+	|VARS '[' exp ']' {$$ = newarrayval($1, $3);}  // NOVA REGRA PARA ACESSO A ARRAYS
 	|STRING {$$ = newstr($1);}    
 
 	;
@@ -310,15 +410,22 @@ exp:
 
 int main(){
 	for (int i = 0; i < 26; i++) {
-		str_var[i] = NULL;
+		array_sizes[i] = 0;
+		for (int j = 0; j < MAX_ARRAY_SIZE; j++) {
+			str_var[i][j] = NULL;
+			var[i][j] = 0.0;
+		}
 	}
+	
 	yyin=fopen("entrada.txt","r");
 	yyparse();
 	yylex();
 	fclose(yyin);
 
 	for (int i = 0; i < 26; i++) {
-		if (str_var[i]) free(str_var[i]);
+		for (int j = 0; j < MAX_ARRAY_SIZE; j++) {
+			if (str_var[i][j]) free(str_var[i][j]);
+		}
 	}
 	
 return 0;
