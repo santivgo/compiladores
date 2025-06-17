@@ -1,16 +1,7 @@
-a = "Hello World\n"
-b = "Teste de string\n"
-c = 10
-
-PRINT(a)
-PRINT(b) 
-PRINT(c)
-PRINT("\n")
-
-IF(c > 5) {
-    PRINT("c é maior que 5\n")
-    PRINT("Valor de c:")
-    PRINT(c)
-}
-
+a[0] = 10
+a[1] = 20
+b[0] = "Hello"
+b[1] = "World"
+c = a[0] + a[1]
+PRINT(b[0])
 FIM

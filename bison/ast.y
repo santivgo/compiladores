@@ -29,12 +29,14 @@ typedef struct varval { /*Estrutura de um nome de variável, nesse exemplo uma v
 	int var;
 }Varval;
 
+// NOVA ESTRUTURA PARA ACESSO A ARRAYS
 typedef struct arrayval {
 	int nodetype;
 	int var;        // qual array (a, b, c, etc.)
 	Ast *index;     // expressão do índice
 }Arrayval;
 
+// NOVA ESTRUTURA PARA ATRIBUIÇÃO EM ARRAYS
 typedef struct arrayasgn {
 	int nodetype;
 	int var;        // qual array
@@ -42,7 +44,7 @@ typedef struct arrayasgn {
 	Ast *value;     // valor a ser atribuído
 }Arrayasgn;
 
-typedef struct flow {
+typedef struct flow { /*Estrutura de um desvio (if/else/while)*/
 	int nodetype;
 	Ast *cond;		/*condição*/
 	Ast *tl;		/*then, ou seja, verdade*/
@@ -55,9 +57,11 @@ typedef struct symasgn { /*Estrutura para um nó de atribuição. Para atrubuir 
 	Ast *v;
 }Symasgn;
 
+// ARRAYS PARA VARIÁVEIS NUMÉRICAS E STRINGS (AGORA SÃO BIDIMENSIONAIS)
 double var[26][MAX_ARRAY_SIZE];     // var[variável][índice]
 char* str_var[26][MAX_ARRAY_SIZE];  // str_var[variável][índice]
 
+// ARRAYS PARA CONTROLAR TAMANHOS DOS VETORES
 int array_sizes[26];  // tamanho atual de cada array
 int aux;
 
@@ -72,6 +76,7 @@ Ast * newstr(char* s) {
 	return (Ast*)a;
 }
 
+// NOVA FUNÇÃO PARA CRIAR NÓ DE ACESSO A ARRAY
 Ast * newarrayval(int var, Ast *index) {
 	Arrayval *a = (Arrayval*) malloc(sizeof(Arrayval));
 	if(!a) {
@@ -159,7 +164,6 @@ Ast * newasgn(int s, Ast *v) { /*Função para um nó de atribuição*/
 	return (Ast *)a;
 }
 
-
 Ast * newValorVal(int s) { /*Função que recupera o nome/referência de uma variável, neste caso o número*/
 	
 	Varval *a = (Varval*) malloc(sizeof(Varval));
@@ -172,9 +176,6 @@ Ast * newValorVal(int s) { /*Função que recupera o nome/referência de uma var
 	return (Ast*)a;
 	
 }
-
-
-
 
 double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 	double v; 
@@ -203,10 +204,9 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 				printf("Erro: índice do array fora dos limites\n");
 				v = 0.0;
 			} else {
-				// Verifica se é uma string ou número
+				// Apenas retorna o valor, não imprime
 				if (str_var[var_index][array_index] != NULL) {
-					printf("%s", str_var[var_index][array_index]);
-					v = 0.0;
+					v = 0.0; // Ou algum código especial para indicar que é string
 				} else {
 					v = var[var_index][array_index];
 				}
@@ -304,31 +304,27 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 		case 'L': eval(a->l); v = eval(a->r); break; /*Lista de operções em um bloco IF/ELSE/WHILE. Assim o analisador não se perde entre os blocos*/
 		
 		case 'P':
-			// PRINT com suporte a arrays
-			if (a->l->nodetype == 'S') {
-				// String literal
-				eval(a->l);  // Já imprime a string
-				v = 0.0;
-			} else if (a->l->nodetype == 'N') {
-				// Variável - pode ser string ou número (índice 0)
-				int var_index = ((Varval *)a->l)->var;
-				if (str_var[var_index][0] != NULL) {
-					printf("%s", str_var[var_index][0]);
+			if (a->l->nodetype == 'A') {
+				// Acesso a array - trata string ou número
+				int var_index = ((Arrayval *)a->l)->var;
+				int array_index = (int)eval(((Arrayval *)a->l)->index);
+				
+				if (str_var[var_index][array_index] != NULL) {
+					printf("%s", str_var[var_index][array_index]);
 				} else {
-					printf("%.2f", var[var_index][0]);
+					printf("%.2f", var[var_index][array_index]);
 				}
-				v = 0.0;
-			} else if (a->l->nodetype == 'A') {
-				// Acesso a array
-				eval(a->l);  // Já imprime o valor
-				v = 0.0;
+				v = 0.0;  // ✅ Adicione esta linha
 			} else {
-				// Expressão numérica
-				v = eval(a->l);
-				printf("%.2f", v);
+				v = eval(a->l);  // Avalia qualquer expressão
+				if (a->l->nodetype == 'S') {
+					// String já foi impressa no eval
+				} else {
+					printf("%.2f", v);  // Imprime o resultado numérico
+				}
 			}
-			break;
-		
+			break;  // ✅ Um só break para todo o case 'P'
+
 		default: printf("internal error: bad node %c\n", a->nodetype);
 				
 	}
@@ -380,7 +376,7 @@ stmt: IF '(' exp ')' '{' list '}' %prec IFX {$$ = newflow('I', $3, $6, NULL);}
 	| IF '(' exp ')' '{' list '}' ELSE '{' list '}' {$$ = newflow('I', $3, $6, $10);}
 	| WHILE '(' exp ')' '{' list '}' {$$ = newflow('W', $3, $6, NULL);}
 	| VARS '=' exp {$$ = newasgn($1,$3);}
-	| VARS '[' exp ']' '=' exp {$$ = newarrayasgn($1, $3, $6);}  
+	| VARS '[' exp ']' '=' exp {$$ = newarrayasgn($1, $3, $6);}  // NOVA REGRA PARA ATRIBUIÇÃO EM ARRAYS
 	| PRINT '(' exp ')' { $$ = newast('P',$3,NULL);}
 	;
 
@@ -409,6 +405,7 @@ exp:
 #include "lex.yy.c"
 
 int main(){
+	// Inicializa arrays
 	for (int i = 0; i < 26; i++) {
 		array_sizes[i] = 0;
 		for (int j = 0; j < MAX_ARRAY_SIZE; j++) {
@@ -422,6 +419,7 @@ int main(){
 	yylex();
 	fclose(yyin);
 
+	// Libera memória das strings
 	for (int i = 0; i < 26; i++) {
 		for (int j = 0; j < MAX_ARRAY_SIZE; j++) {
 			if (str_var[i][j]) free(str_var[i][j]);
@@ -430,4 +428,3 @@ int main(){
 	
 return 0;
 }
-
