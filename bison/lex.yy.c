@@ -880,7 +880,7 @@ YY_RULE_SETUP
 case 17:
 YY_RULE_SETUP
 #line 78 "ast.l"
-{printf("(%s) Ignorado\n",yytext);}
+{;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP

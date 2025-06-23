@@ -75,5 +75,5 @@ PRINT "PRINT"
 {WHILE} {return WHILE;}
 {PRINT} {return PRINT;}
 [\ \n\t]*	{;}
-"//".* {printf("(%s) Ignorado\n",yytext);}
+"//".* {;}
 %%
