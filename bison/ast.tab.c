@@ -75,9 +75,21 @@
 #include <string.h> 
 
 #define MAX_ARRAY_SIZE 100
+#define MAX_ARRAY_ELEMENTS 50  // Máximo de elementos em uma declaração de array
+#define MAX_VARIABLES 1000  // Máximo de variáveis
+#define HASH_TABLE_SIZE 101
+
 
 /*O nodetype serve para indicar o tipo de nó que está na árvore. Isso serve para a função eval() entender o que realizar naquele nó*/
  
+ typedef struct variable {
+    char* name;                           // Nome da variável
+    double values[MAX_ARRAY_SIZE];        // Valores numéricos
+    char* strings[MAX_ARRAY_SIZE];        // Valores string
+    int array_size;                       // Tamanho atual do array
+    struct variable* next;                // Para lista ligada (caso de colisão)
+} Variable;
+
 typedef struct ast { /*Estrutura de um nó*/
 	int nodetype;
 	struct ast *l; /*Esquerda*/
@@ -96,23 +108,39 @@ typedef struct strval {
 
 typedef struct varval { /*Estrutura de um nome de variável, nesse exemplo uma variável é um número no vetor var[26]*/
 	int nodetype;
-	int var;
+	char* name;
 }Varval;
 
-// NOVA ESTRUTURA PARA ACESSO A ARRAYS
 typedef struct arrayval {
 	int nodetype;
-	int var;        // qual array (a, b, c, etc.)
+	char* name;        // qual array (a, b, c, etc.)
 	Ast *index;     // expressão do índice
 }Arrayval;
 
-// NOVA ESTRUTURA PARA ATRIBUIÇÃO EM ARRAYS
 typedef struct arrayasgn {
 	int nodetype;
-	int var;        // qual array
+	char* name;        // qual array
 	Ast *index;     // expressão do índice
 	Ast *value;     // valor a ser atribuído
 }Arrayasgn;
+
+typedef struct arraylit {
+    int nodetype;
+    Ast **elements;     // Array de ponteiros para elementos
+    int count;          // Número de elementos
+}Arraylit;
+
+typedef struct arrayvarasgn {
+    int nodetype;
+    char* name;           
+    Ast *array_expr;    // Expressão do array (pode ser array literal ou outra variável)
+}Arrayvarasgn;
+
+typedef struct scanval {
+    int nodetype;
+    char* name;        // variável simples
+    Ast *index;     // NULL para variável simples, expressão para array
+}Scanval;
 
 typedef struct flow { /*Estrutura de um desvio (if/else/while)*/
 	int nodetype;
@@ -127,14 +155,91 @@ typedef struct symasgn { /*Estrutura para um nó de atribuição. Para atrubuir 
 	Ast *v;
 }Symasgn;
 
-// ARRAYS PARA VARIÁVEIS NUMÉRICAS E STRINGS (AGORA SÃO BIDIMENSIONAIS)
-double var[26][MAX_ARRAY_SIZE];     // var[variável][índice]
-char* str_var[26][MAX_ARRAY_SIZE];  // str_var[variável][índice]
+Variable* variable_table[HASH_TABLE_SIZE];
 
-// ARRAYS PARA CONTROLAR TAMANHOS DOS VETORES
+unsigned int hash_function(const char* name) {
+    unsigned int hash = 0;
+    while (*name) {
+        hash = hash * 31 + *name;
+        name++;
+    }
+    return hash % HASH_TABLE_SIZE;
+}
+Variable* find_or_create_variable(const char* name) {
+    unsigned int index = hash_function(name);
+    Variable* var = variable_table[index];
+    
+    // Procura na lista ligada
+    while (var != NULL) {
+        if (strcmp(var->name, name) == 0) {
+            return var;  // Encontrou
+        }
+        var = var->next;
+    }
+    
+    // Não encontrou, cria nova variável
+    Variable* new_var = (Variable*)malloc(sizeof(Variable));
+    if (!new_var) {
+        printf("Erro: sem memória para nova variável\n");
+        exit(1);
+    }
+    
+    new_var->name = strdup(name);
+    new_var->array_size = 0;
+    new_var->next = variable_table[index];
+    
+    // Inicializa arrays
+    for (int i = 0; i < MAX_ARRAY_SIZE; i++) {
+        new_var->values[i] = 0.0;
+        new_var->strings[i] = NULL;
+    }
+    
+    variable_table[index] = new_var;
+    return new_var;
+}
+
+void clear_variable_array(Variable* var) {
+    for (int i = 0; i < var->array_size; i++) {
+        var->values[i] = 0.0;
+        if (var->strings[i]) {
+            free(var->strings[i]);
+            var->strings[i] = NULL;
+        }
+    }
+    var->array_size = 0;
+}
+
+// ARRAYS PARA VARIÁVEIS NUMÉRICAS E STRINGS (AGORA SÃO BIDIMENSIONAIS)
+char* str_var[26][MAX_ARRAY_SIZE];  // str_var[variável][índice]
 int array_sizes[26];  // tamanho atual de cada array
 int aux;
 
+Ast * newarraylit(Ast **elements, int count) {
+    Arraylit *a = (Arraylit*) malloc(sizeof(Arraylit));
+    if(!a) {
+        printf("out of space");
+        exit(0);
+    }
+    a->nodetype = 'T';  // 'T' para array liTeral
+    a->elements = elements;
+    a->count = count;
+    return (Ast*)a;
+}
+
+Ast * newarrayvarasgn(char* name, Ast *array_expr) {
+    Arrayvarasgn *a = (Arrayvarasgn*) malloc(sizeof(Arrayvarasgn));
+    if(!a) {
+        printf("out of space");
+        exit(0);
+    }
+    a->nodetype = 'V';  // 'V' para array Variable assignment
+    a->name = strdup(name); 
+    a->array_expr = array_expr;
+    return (Ast*)a;
+}
+
+
+// Criação de Nós
 Ast * newstr(char* s) {
 	Strval *a = (Strval*) malloc(sizeof(Strval));
 	if(!a) {
@@ -146,28 +251,41 @@ Ast * newstr(char* s) {
 	return (Ast*)a;
 }
 
+Ast * newscan(char* name, Ast *index) {
+    Scanval *a = (Scanval*) malloc(sizeof(Scanval));
+    if(!a) {
+        printf("out of space");
+        exit(0);
+    }
+    a->nodetype = 'D';  // 'D' para read
+    a->name = strdup(name);
+    a->index = index;   // NULL para variável simples
+    return (Ast*)a;
+}
+
+
 // NOVA FUNÇÃO PARA CRIAR NÓ DE ACESSO A ARRAY
-Ast * newarrayval(int var, Ast *index) {
+Ast * newarrayval(char* name, Ast *index) {
 	Arrayval *a = (Arrayval*) malloc(sizeof(Arrayval));
 	if(!a) {
 		printf("out of space");
 		exit(0);
 	}
 	a->nodetype = 'A';  // 'A' para array access
-	a->var = var;
+	a->name = strdup(name);
 	a->index = index;
 	return (Ast*)a;
 }
 
 // NOVA FUNÇÃO PARA CRIAR NÓ DE ATRIBUIÇÃO EM ARRAY
-Ast * newarrayasgn(int var, Ast *index, Ast *value) {
+Ast * newarrayasgn(char* name, Ast *index, Ast *value) {
 	Arrayasgn *a = (Arrayasgn*) malloc(sizeof(Arrayasgn));
 	if(!a) {
 		printf("out of space");
 		exit(0);
 	}
 	a->nodetype = 'R';  // 'R' para array assignment
-	a->var = var;
+	a->name = strdup(name);
 	a->index = index;
 	a->value = value;
 	return (Ast*)a;
@@ -222,19 +340,19 @@ Ast * newcmp(int cmptype, Ast *l, Ast *r){ /*Função que cria um nó para teste
 	return a;
 }
 
-Ast * newasgn(int s, Ast *v) { /*Função para um nó de atribuição*/
+Ast * newasgn(char* name, Ast *v) { /*Função para um nó de atribuição*/
 	Symasgn *a = (Symasgn*)malloc(sizeof(Symasgn));
 	if(!a) {
 		printf("out of space");
 	exit(0);
 	}
 	a->nodetype = '=';
-	a->s = s; /*Símbolo/variável*/
+	a->name = strdup(name);  
 	a->v = v; /*Valor*/
 	return (Ast *)a;
 }
 
-Ast * newValorVal(int s) { /*Função que recupera o nome/referência de uma variável, neste caso o número*/
+Ast * newValorVal(char* name) { /*Função que recupera o nome/referência de uma variável, neste caso o número*/
 	
 	Varval *a = (Varval*) malloc(sizeof(Varval));
 	if(!a) {
@@ -242,9 +360,37 @@ Ast * newValorVal(int s) { /*Função que recupera o nome/referência de uma var
 		exit(0);
 	}
 	a->nodetype = 'N';
-	a->var = s;
+	a->var = strdup(name);
 	return (Ast*)a;
 	
+}
+
+
+char* read_string() {
+    char* buffer = malloc(1000);  // Buffer temporário
+    if (fgets(buffer, 1000, stdin)) {
+        // Remove newline se existir
+        int len = strlen(buffer);
+        if (len > 0 && buffer[len-1] == '\n') {
+            buffer[len-1] = '\0';
+        }
+        // Redimensiona para o tamanho exato
+        char* result = malloc(strlen(buffer) + 1);
+        strcpy(result, buffer);
+        free(buffer);
+        return result;
+    }
+    free(buffer);
+    return strdup("");  // Retorna string vazia em caso de erro
+}
+
+int is_number(const char* str) {
+    if (!str || !*str) return 0;
+    
+    char* endptr;
+    strtod(str, &endptr);
+    
+    return (*endptr == '\0');
 }
 
 double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
@@ -255,15 +401,16 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 	}
 	switch(a->nodetype) {
 		case 'K': v = ((Numval *)a)->number; break; 	/*Recupera um número*/
-		case 'N': 
-			// Verifica se existe uma string armazenada nesta variável (índice 0)
-			if (str_var[((Varval *)a)->var][0] != NULL) {
-				printf("%s", str_var[((Varval *)a)->var][0]);
+		case 'N': {
+			Variable* var = find_or_create_variable(((Varval *)a)->name);
+			if (var->strings[0] != NULL) {
+				printf("%s", var->strings[0]);
 				v = 0.0;
 			} else {
-				v = var[((Varval *)a)->var][0]; // número (índice 0)
+				v = var->values[0];
 			}
 			break;
+		}
 		
 		// NOVO CASO PARA ACESSO A ARRAYS
 		case 'A': {
@@ -316,6 +463,136 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 			}
 			break;
 		}
+		case 'D': {
+            int var_index = ((Scanval *)a)->var;
+            char input_buffer[1000];
+            
+            if (((Scanval *)a)->index == NULL) {
+                fflush(stdout);
+                
+                if (fgets(input_buffer, sizeof(input_buffer), stdin)) {
+                    // Remove newline
+                    int len = strlen(input_buffer);
+                    if (len > 0 && input_buffer[len-1] == '\n') {
+                        input_buffer[len-1] = '\0';
+                    }
+                    
+                    if (is_number(input_buffer)) {
+                        // É um número
+                        v = atof(input_buffer);
+                        var[var_index][0] = v;
+                        // Limpa string se existir
+                        if (str_var[var_index][0]) {
+                            free(str_var[var_index][0]);
+                            str_var[var_index][0] = NULL;
+                        }
+                    } else {
+                        // É uma string
+                        if (str_var[var_index][0]) {
+                            free(str_var[var_index][0]);
+                        }
+                        str_var[var_index][0] = strdup(input_buffer);
+                        var[var_index][0] = 0.0;  // Zera valor numérico
+                        v = 0.0;
+                    }
+                }
+            } else {
+                // Leitura para array
+                int array_index = (int)eval(((Scanval *)a)->index);
+                
+                if (array_index < 0 || array_index >= MAX_ARRAY_SIZE) {
+                    printf("Erro: índice do array fora dos limites\n");
+                    v = 0.0;
+                } else {
+                    fflush(stdout);
+                    
+                    if (fgets(input_buffer, sizeof(input_buffer), stdin)) {
+                        // Remove newline
+                        int len = strlen(input_buffer);
+                        if (len > 0 && input_buffer[len-1] == '\n') {
+                            input_buffer[len-1] = '\0';
+                        }
+                        
+                        if (is_number(input_buffer)) {
+                            // É um número
+                            v = atof(input_buffer);
+                            var[var_index][array_index] = v;
+                            // Limpa string se existir
+                            if (str_var[var_index][array_index]) {
+                                free(str_var[var_index][array_index]);
+                                str_var[var_index][array_index] = NULL;
+                            }
+                        } else {
+                            // É uma string
+                            if (str_var[var_index][array_index]) {
+                                free(str_var[var_index][array_index]);
+                            }
+                            str_var[var_index][array_index] = strdup(input_buffer);
+                            var[var_index][array_index] = 0.0;
+                            v = 0.0;
+                        }
+                        
+                        // Atualiza tamanho do array se necessário
+                        if (array_index >= array_sizes[var_index]) {
+                            array_sizes[var_index] = array_index + 1;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+		case 'T': {
+            // Array literal - apenas retorna 0 (será usado em atribuições)
+            v = 0.0;
+            break;
+        }
+        
+        // NOVO CASO PARA ATRIBUIÇÃO DE ARRAY COMPLETO
+        case 'V': {
+            int var_index = ((Arrayvarasgn *)a)->var;
+            Ast *array_expr = ((Arrayvarasgn *)a)->array_expr;
+            
+            // Limpa o array atual
+            clear_variable_array(var);
+            
+            if (array_expr->nodetype == 'T') {
+                // Array literal [1, 2, 3] ou []
+                Arraylit *lit = (Arraylit *)array_expr;
+                
+                // Copia os elementos
+                for (int i = 0; i < lit->count && i < MAX_ARRAY_SIZE; i++) {
+                    if (lit->elements[i]->nodetype == 'S') {
+                        // Elemento é string
+                        str_var[var_index][i] = strdup(((Strval *)lit->elements[i])->string);
+                        var[var_index][i] = 0.0;
+                    } else {
+                        // Elemento é número
+                        var[var_index][i] = eval(lit->elements[i]);
+                        str_var[var_index][i] = NULL;
+                    }
+                }
+                array_sizes[var_index] = lit->count;
+                
+            } else if (array_expr->nodetype == 'N') {
+                // Cópia de outro array: b = a
+                int src_var = ((Varval *)array_expr)->var;
+                
+                // Copia todos os elementos do array origem
+                for (int i = 0; i < array_sizes[src_var] && i < MAX_ARRAY_SIZE; i++) {
+                    if (str_var[src_var][i] != NULL) {
+                        str_var[var_index][i] = strdup(str_var[src_var][i]);
+                        var[var_index][i] = 0.0;
+                    } else {
+                        var[var_index][i] = var[src_var][i];
+                        str_var[var_index][i] = NULL;
+                    }
+                }
+                array_sizes[var_index] = array_sizes[src_var];
+            }
+            
+            v = 0.0;
+            break;
+        }
 		
 		case '+': v = eval(a->l) + eval(a->r); break;	/*Operações "árv esq   +   árv dir"*/
 		case '-': v = eval(a->l) - eval(a->r); break;	/*Operações*/
@@ -407,7 +684,7 @@ void yyerror (char *s){
 }
 
 
-#line 411 "ast.tab.c"
+#line 688 "ast.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -456,9 +733,10 @@ extern int yydebug;
     ELSE = 263,                    /* ELSE  */
     WHILE = 264,                   /* WHILE  */
     PRINT = 265,                   /* PRINT  */
-    CMP = 266,                     /* CMP  */
-    IFX = 267,                     /* IFX  */
-    NEG = 268                      /* NEG  */
+    SCAN = 266,                    /* SCAN  */
+    CMP = 267,                     /* CMP  */
+    IFX = 268,                     /* IFX  */
+    NEG = 269                      /* NEG  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -467,16 +745,17 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 341 "ast.y"
+#line 618 "ast.y"
 
 	float flo;
 	int fn;
-	int inter;
 	char* str; 
 	Ast *a;
+	Ast **array_ptr;  // Para lista de elementos de array
+
 	
 
-#line 480 "ast.tab.c"
+#line 759 "ast.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -507,27 +786,31 @@ enum yysymbol_kind_t
   YYSYMBOL_ELSE = 8,                       /* ELSE  */
   YYSYMBOL_WHILE = 9,                      /* WHILE  */
   YYSYMBOL_PRINT = 10,                     /* PRINT  */
-  YYSYMBOL_CMP = 11,                       /* CMP  */
-  YYSYMBOL_12_ = 12,                       /* '='  */
-  YYSYMBOL_13_ = 13,                       /* '+'  */
-  YYSYMBOL_14_ = 14,                       /* '-'  */
-  YYSYMBOL_15_ = 15,                       /* '*'  */
-  YYSYMBOL_16_ = 16,                       /* '/'  */
-  YYSYMBOL_17_ = 17,                       /* '^'  */
-  YYSYMBOL_IFX = 18,                       /* IFX  */
-  YYSYMBOL_NEG = 19,                       /* NEG  */
-  YYSYMBOL_20_ = 20,                       /* '('  */
-  YYSYMBOL_21_ = 21,                       /* ')'  */
-  YYSYMBOL_22_ = 22,                       /* '{'  */
-  YYSYMBOL_23_ = 23,                       /* '}'  */
-  YYSYMBOL_24_ = 24,                       /* '['  */
-  YYSYMBOL_25_ = 25,                       /* ']'  */
-  YYSYMBOL_YYACCEPT = 26,                  /* $accept  */
-  YYSYMBOL_val = 27,                       /* val  */
-  YYSYMBOL_prog = 28,                      /* prog  */
-  YYSYMBOL_stmt = 29,                      /* stmt  */
-  YYSYMBOL_list = 30,                      /* list  */
-  YYSYMBOL_exp = 31                        /* exp  */
+  YYSYMBOL_SCAN = 11,                      /* SCAN  */
+  YYSYMBOL_CMP = 12,                       /* CMP  */
+  YYSYMBOL_13_ = 13,                       /* '='  */
+  YYSYMBOL_14_ = 14,                       /* '+'  */
+  YYSYMBOL_15_ = 15,                       /* '-'  */
+  YYSYMBOL_16_ = 16,                       /* '*'  */
+  YYSYMBOL_17_ = 17,                       /* '/'  */
+  YYSYMBOL_18_ = 18,                       /* '^'  */
+  YYSYMBOL_IFX = 19,                       /* IFX  */
+  YYSYMBOL_NEG = 20,                       /* NEG  */
+  YYSYMBOL_21_ = 21,                       /* '('  */
+  YYSYMBOL_22_ = 22,                       /* ')'  */
+  YYSYMBOL_23_ = 23,                       /* '{'  */
+  YYSYMBOL_24_ = 24,                       /* '}'  */
+  YYSYMBOL_25_ = 25,                       /* '['  */
+  YYSYMBOL_26_ = 26,                       /* ']'  */
+  YYSYMBOL_27_ = 27,                       /* ','  */
+  YYSYMBOL_YYACCEPT = 28,                  /* $accept  */
+  YYSYMBOL_val = 29,                       /* val  */
+  YYSYMBOL_prog = 30,                      /* prog  */
+  YYSYMBOL_stmt = 31,                      /* stmt  */
+  YYSYMBOL_array_literal = 32,             /* array_literal  */
+  YYSYMBOL_array_elements = 33,            /* array_elements  */
+  YYSYMBOL_list = 34,                      /* list  */
+  YYSYMBOL_exp = 35                        /* exp  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -853,21 +1136,21 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  13
+#define YYFINAL  15
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   129
+#define YYLAST   194
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  26
+#define YYNTOKENS  28
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  6
+#define YYNNTS  8
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  24
+#define YYNRULES  32
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  62
+#define YYNSTATES  79
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   268
+#define YYMAXUTOK   269
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -885,15 +1168,15 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-      20,    21,    15,    13,     2,    14,     2,    16,     2,     2,
+      21,    22,    16,    14,    27,    15,     2,    17,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,    12,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,    24,     2,    25,    17,     2,     2,     2,     2,     2,
+       2,    13,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    22,     2,    23,     2,     2,     2,     2,
+       2,    25,     2,    26,    18,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,    23,     2,    24,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -907,16 +1190,17 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9,    10,    11,    18,    19
+       5,     6,     7,     8,     9,    10,    11,    12,    19,    20
 };
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   365,   365,   368,   369,   375,   376,   377,   378,   379,
-     380,   383,   384,   388,   389,   390,   391,   392,   393,   394,
-     395,   396,   397,   398,   399
+       0,   645,   645,   648,   649,   655,   656,   657,   658,   659,
+     660,   661,   662,   663,   664,   669,   674,   686,   693,   706,
+     707,   711,   712,   713,   714,   715,   716,   717,   718,   719,
+     720,   721,   722
 };
 #endif
 
@@ -933,9 +1217,10 @@ static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
 static const char *const yytname[] =
 {
   "\"end of file\"", "error", "\"invalid token\"", "NUM", "VARS",
-  "STRING", "FIM", "IF", "ELSE", "WHILE", "PRINT", "CMP", "'='", "'+'",
-  "'-'", "'*'", "'/'", "'^'", "IFX", "NEG", "'('", "')'", "'{'", "'}'",
-  "'['", "']'", "$accept", "val", "prog", "stmt", "list", "exp", YY_NULLPTR
+  "STRING", "FIM", "IF", "ELSE", "WHILE", "PRINT", "SCAN", "CMP", "'='",
+  "'+'", "'-'", "'*'", "'/'", "'^'", "IFX", "NEG", "'('", "')'", "'{'",
+  "'}'", "'['", "']'", "','", "$accept", "val", "prog", "stmt",
+  "array_literal", "array_elements", "list", "exp", YY_NULLPTR
 };
 
 static const char *
@@ -945,27 +1230,28 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-22)
+#define YYPACT_NINF (-58)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF (-1)
+#define YYTABLE_NINF (-31)
 
 #define yytable_value_is_error(Yyn) \
   0
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-static const yytype_int8 yypact[] =
+static const yytype_int16 yypact[] =
 {
-     115,    20,   -15,   -13,   -12,     9,   111,   -22,    37,    37,
-      37,    37,    37,   -22,   -22,   -22,   -22,     3,   -22,    37,
-      37,    32,    48,    68,    77,    86,    37,    19,    95,    37,
-      37,    37,    37,    37,    37,    23,    30,    33,   -22,    55,
-     -22,    32,   112,   112,    19,    19,    19,    37,   115,   115,
-     -22,    32,   -22,     6,    10,    50,   -22,   -22,    34,   115,
-      27,   -22
+     175,     3,   -13,   -11,   -10,    -4,    27,   167,   -58,    34,
+      76,    76,    76,    76,    37,   -58,   -58,   -58,   -58,   111,
+     -58,    76,    76,    21,   -58,   176,    18,    78,   123,   132,
+     141,   -16,    76,    38,   150,   -58,    19,   176,    76,    76,
+      76,    76,    76,    76,    43,    39,    48,   -58,   -58,    76,
+      91,   -58,   -58,    76,   176,    36,    36,    38,    38,    38,
+      76,   175,   175,    98,   -58,   176,   176,   -58,    11,    54,
+      35,    52,   -58,   -58,   -58,    53,   175,    63,   -58
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -973,25 +1259,26 @@ static const yytype_int8 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       0,     0,     0,     0,     0,     0,     0,     3,     0,     0,
-       0,     0,     0,     1,     2,     4,    21,    22,    24,     0,
-       0,     8,     0,     0,     0,     0,     0,    20,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,    10,     0,
-      19,    18,    13,    14,    15,    16,    17,     0,     0,     0,
-      23,     9,    11,     0,     0,     5,    12,     7,     0,     0,
-       0,     6
+       0,     0,     0,     0,     0,     0,     0,     0,     3,     0,
+       0,     0,     0,     0,     0,     1,     2,     4,    29,    11,
+      32,     0,     0,     0,    10,     8,    30,     0,     0,     0,
+       0,     0,     0,    28,     0,    15,     0,    17,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    12,    13,     0,
+       0,    27,    16,     0,    26,    21,    22,    23,    24,    25,
+       0,     0,     0,     0,    31,    18,     9,    19,     0,     0,
+       0,     5,    20,     7,    14,     0,     0,     0,     6
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -22,   -22,   -22,     0,   -21,    -8
+     -58,   -58,   -58,     0,   -58,   -58,   -57,    -9
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,     5,     6,    52,    53,    21
+       0,     6,     7,    67,    24,    36,    68,    25
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -999,65 +1286,82 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-       7,    22,    23,    24,    25,    10,    15,    11,    12,    13,
-       1,    27,    28,     2,     1,     3,     4,     2,    39,     3,
-       4,    41,    42,    43,    44,    45,    46,    26,    54,    55,
-      29,     1,     8,    57,     2,    47,     3,     4,    60,    51,
-      16,    17,    18,    29,     9,    30,    31,    32,    33,    34,
-      61,    19,    48,    56,    56,    49,    59,    20,    58,    29,
-      56,    30,    31,    32,    33,    34,    29,     0,    30,    31,
-      32,    33,    34,    35,     0,     0,     0,     0,     0,    29,
-      50,    30,    31,    32,    33,    34,     0,     0,    29,    36,
-      30,    31,    32,    33,    34,     0,     0,    29,    37,    30,
-      31,    32,    33,    34,     0,     0,    29,    38,    30,    31,
-      32,    33,    34,     0,     0,     1,    40,    14,     2,     1,
-       3,     4,     2,    29,     3,     4,     0,    32,    33,    34
+       8,    27,    28,    29,    30,    69,    48,    17,    11,    49,
+      12,    13,    33,    34,    37,     1,     9,    14,     2,    77,
+       3,     4,     5,    50,    18,    26,    20,    15,    10,    54,
+      55,    56,    57,    58,    59,    71,    21,    18,    19,    20,
+      63,    31,    22,    32,    65,    52,    53,    35,    38,    21,
+      38,    66,    41,    42,    43,    22,    60,    74,     1,    23,
+      75,     2,    61,     3,     4,     5,     0,     1,    72,    72,
+       2,    62,     3,     4,     5,     0,    76,    72,    73,    18,
+      26,    20,     0,     0,     0,     0,     0,    78,     0,     0,
+      38,    21,    39,    40,    41,    42,    43,    22,     0,     0,
+       0,     0,     0,    38,    44,    39,    40,    41,    42,    43,
+      38,     0,    39,    40,    41,    42,    43,    64,     0,     0,
+       0,     0,     0,   -30,    70,   -30,   -30,   -30,   -30,   -30,
+       0,     0,     0,     0,     0,    38,    32,    39,    40,    41,
+      42,    43,     0,     0,    38,    45,    39,    40,    41,    42,
+      43,     0,     0,    38,    46,    39,    40,    41,    42,    43,
+       0,     0,    38,    47,    39,    40,    41,    42,    43,     0,
+       0,     1,    51,    16,     2,     0,     3,     4,     5,     1,
+       0,     0,     2,     0,     3,     4,     5,     0,    38,     0,
+      39,    40,    41,    42,    43
 };
 
 static const yytype_int8 yycheck[] =
 {
-       0,     9,    10,    11,    12,    20,     6,    20,    20,     0,
-       4,    19,    20,     7,     4,     9,    10,     7,    26,     9,
-      10,    29,    30,    31,    32,    33,    34,    24,    49,    23,
-      11,     4,    12,    23,     7,    12,     9,    10,    59,    47,
-       3,     4,     5,    11,    24,    13,    14,    15,    16,    17,
-      23,    14,    22,    53,    54,    22,    22,    20,     8,    11,
-      60,    13,    14,    15,    16,    17,    11,    -1,    13,    14,
-      15,    16,    17,    25,    -1,    -1,    -1,    -1,    -1,    11,
-      25,    13,    14,    15,    16,    17,    -1,    -1,    11,    21,
-      13,    14,    15,    16,    17,    -1,    -1,    11,    21,    13,
-      14,    15,    16,    17,    -1,    -1,    11,    21,    13,    14,
-      15,    16,    17,    -1,    -1,     4,    21,     6,     7,     4,
-       9,    10,     7,    11,     9,    10,    -1,    15,    16,    17
+       0,    10,    11,    12,    13,    62,    22,     7,    21,    25,
+      21,    21,    21,    22,    23,     4,    13,    21,     7,    76,
+       9,    10,    11,    32,     3,     4,     5,     0,    25,    38,
+      39,    40,    41,    42,    43,    24,    15,     3,     4,     5,
+      49,     4,    21,    25,    53,    26,    27,    26,    12,    15,
+      12,    60,    16,    17,    18,    21,    13,    22,     4,    25,
+       8,     7,    23,     9,    10,    11,    -1,     4,    68,    69,
+       7,    23,     9,    10,    11,    -1,    23,    77,    24,     3,
+       4,     5,    -1,    -1,    -1,    -1,    -1,    24,    -1,    -1,
+      12,    15,    14,    15,    16,    17,    18,    21,    -1,    -1,
+      -1,    -1,    -1,    12,    26,    14,    15,    16,    17,    18,
+      12,    -1,    14,    15,    16,    17,    18,    26,    -1,    -1,
+      -1,    -1,    -1,    12,    26,    14,    15,    16,    17,    18,
+      -1,    -1,    -1,    -1,    -1,    12,    25,    14,    15,    16,
+      17,    18,    -1,    -1,    12,    22,    14,    15,    16,    17,
+      18,    -1,    -1,    12,    22,    14,    15,    16,    17,    18,
+      -1,    -1,    12,    22,    14,    15,    16,    17,    18,    -1,
+      -1,     4,    22,     6,     7,    -1,     9,    10,    11,     4,
+      -1,    -1,     7,    -1,     9,    10,    11,    -1,    12,    -1,
+      14,    15,    16,    17,    18
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     4,     7,     9,    10,    27,    28,    29,    12,    24,
-      20,    20,    20,     0,     6,    29,     3,     4,     5,    14,
-      20,    31,    31,    31,    31,    31,    24,    31,    31,    11,
-      13,    14,    15,    16,    17,    25,    21,    21,    21,    31,
-      21,    31,    31,    31,    31,    31,    31,    12,    22,    22,
-      25,    31,    29,    30,    30,    23,    29,    23,     8,    22,
-      30,    23
+       0,     4,     7,     9,    10,    11,    29,    30,    31,    13,
+      25,    21,    21,    21,    21,     0,     6,    31,     3,     4,
+       5,    15,    21,    25,    32,    35,     4,    35,    35,    35,
+      35,     4,    25,    35,    35,    26,    33,    35,    12,    14,
+      15,    16,    17,    18,    26,    22,    22,    22,    22,    25,
+      35,    22,    26,    27,    35,    35,    35,    35,    35,    35,
+      13,    23,    23,    35,    26,    35,    35,    31,    34,    34,
+      26,    24,    31,    24,    22,     8,    23,    34,    24
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    26,    27,    28,    28,    29,    29,    29,    29,    29,
-      29,    30,    30,    31,    31,    31,    31,    31,    31,    31,
-      31,    31,    31,    31,    31
+       0,    28,    29,    30,    30,    31,    31,    31,    31,    31,
+      31,    31,    31,    31,    31,    32,    32,    33,    33,    34,
+      34,    35,    35,    35,    35,    35,    35,    35,    35,    35,
+      35,    35,    35
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     2,     1,     2,     7,    11,     7,     3,     6,
-       4,     1,     2,     3,     3,     3,     3,     3,     3,     3,
-       2,     1,     1,     4,     1
+       3,     3,     4,     4,     7,     2,     3,     1,     3,     1,
+       2,     3,     3,     3,     3,     3,     3,     3,     2,     1,
+       1,     4,     1
 };
 
 
@@ -1521,139 +1825,215 @@ yyreduce:
   switch (yyn)
     {
   case 3: /* prog: stmt  */
-#line 368 "ast.y"
+#line 648 "ast.y"
                         {eval((yyvsp[0].a));}
-#line 1527 "ast.tab.c"
+#line 1831 "ast.tab.c"
     break;
 
   case 4: /* prog: prog stmt  */
-#line 369 "ast.y"
+#line 649 "ast.y"
                     {eval((yyvsp[0].a));}
-#line 1533 "ast.tab.c"
+#line 1837 "ast.tab.c"
     break;
 
   case 5: /* stmt: IF '(' exp ')' '{' list '}'  */
-#line 375 "ast.y"
+#line 655 "ast.y"
                                             {(yyval.a) = newflow('I', (yyvsp[-4].a), (yyvsp[-1].a), NULL);}
-#line 1539 "ast.tab.c"
+#line 1843 "ast.tab.c"
     break;
 
   case 6: /* stmt: IF '(' exp ')' '{' list '}' ELSE '{' list '}'  */
-#line 376 "ast.y"
+#line 656 "ast.y"
                                                         {(yyval.a) = newflow('I', (yyvsp[-8].a), (yyvsp[-5].a), (yyvsp[-1].a));}
-#line 1545 "ast.tab.c"
+#line 1849 "ast.tab.c"
     break;
 
   case 7: /* stmt: WHILE '(' exp ')' '{' list '}'  */
-#line 377 "ast.y"
+#line 657 "ast.y"
                                          {(yyval.a) = newflow('W', (yyvsp[-4].a), (yyvsp[-1].a), NULL);}
-#line 1551 "ast.tab.c"
+#line 1855 "ast.tab.c"
     break;
 
   case 8: /* stmt: VARS '=' exp  */
-#line 378 "ast.y"
-                       {(yyval.a) = newasgn((yyvsp[-2].inter),(yyvsp[0].a));}
-#line 1557 "ast.tab.c"
+#line 658 "ast.y"
+                       {(yyval.a) = newasgn((yyvsp[-2].str),(yyvsp[0].a));}
+#line 1861 "ast.tab.c"
     break;
 
   case 9: /* stmt: VARS '[' exp ']' '=' exp  */
-#line 379 "ast.y"
-                                   {(yyval.a) = newarrayasgn((yyvsp[-5].inter), (yyvsp[-3].a), (yyvsp[0].a));}
-#line 1563 "ast.tab.c"
+#line 659 "ast.y"
+                                   {(yyval.a) = newarrayasgn((yyvsp[-5].str), (yyvsp[-3].a), (yyvsp[0].a));}
+#line 1867 "ast.tab.c"
     break;
 
-  case 10: /* stmt: PRINT '(' exp ')'  */
-#line 380 "ast.y"
+  case 10: /* stmt: VARS '=' array_literal  */
+#line 660 "ast.y"
+                                 {(yyval.a) = newarrayvarasgn((yyvsp[-2].str), (yyvsp[0].a));}
+#line 1873 "ast.tab.c"
+    break;
+
+  case 11: /* stmt: VARS '=' VARS  */
+#line 661 "ast.y"
+                    {(yyval.a) = newarrayvarasgn((yyvsp[-2].str), newValorVal((yyvsp[0].str)));}
+#line 1879 "ast.tab.c"
+    break;
+
+  case 12: /* stmt: PRINT '(' exp ')'  */
+#line 662 "ast.y"
                             { (yyval.a) = newast('P',(yyvsp[-1].a),NULL);}
-#line 1569 "ast.tab.c"
+#line 1885 "ast.tab.c"
     break;
 
-  case 11: /* list: stmt  */
-#line 383 "ast.y"
+  case 13: /* stmt: SCAN '(' VARS ')'  */
+#line 663 "ast.y"
+                            { (yyval.a) = newscan((yyvsp[-1].str), NULL);}
+#line 1891 "ast.tab.c"
+    break;
+
+  case 14: /* stmt: SCAN '(' VARS '[' exp ']' ')'  */
+#line 664 "ast.y"
+                                    { (yyval.a) = newscan((yyvsp[-4].str), (yyvsp[-2].a));}
+#line 1897 "ast.tab.c"
+    break;
+
+  case 15: /* array_literal: '[' ']'  */
+#line 669 "ast.y"
+                       {
+        // Array vazio
+        Ast **elements = malloc(sizeof(Ast*) * 1);
+        (yyval.a) = newarraylit(elements, 0);
+    }
+#line 1907 "ast.tab.c"
+    break;
+
+  case 16: /* array_literal: '[' array_elements ']'  */
+#line 674 "ast.y"
+                             {
+        // Array com elementos
+        // Conta quantos elementos temos
+        int count = 0;
+        Ast **temp = (yyvsp[-1].array_ptr);
+        while (temp[count] != NULL) count++;
+        
+        (yyval.a) = newarraylit((yyvsp[-1].array_ptr), count);
+    }
+#line 1921 "ast.tab.c"
+    break;
+
+  case 17: /* array_elements: exp  */
+#line 686 "ast.y"
+                    {
+        // Primeiro elemento
+        Ast **elements = malloc(sizeof(Ast*) * (MAX_ARRAY_ELEMENTS + 1));
+        elements[0] = (yyvsp[0].a);
+        elements[1] = NULL;  // Marca o fim
+        (yyval.array_ptr) = elements;
+    }
+#line 1933 "ast.tab.c"
+    break;
+
+  case 18: /* array_elements: array_elements ',' exp  */
+#line 693 "ast.y"
+                             {
+        // Adiciona mais um elemento
+        int count = 0;
+        while ((yyvsp[-2].array_ptr)[count] != NULL) count++;  // Conta elementos existentes
+        
+        if (count < MAX_ARRAY_ELEMENTS) {
+            (yyvsp[-2].array_ptr)[count] = (yyvsp[0].a);
+            (yyvsp[-2].array_ptr)[count + 1] = NULL;  // Marca o fim
+        }
+        (yyval.array_ptr) = (yyvsp[-2].array_ptr);
+    }
+#line 1949 "ast.tab.c"
+    break;
+
+  case 19: /* list: stmt  */
+#line 706 "ast.y"
               {(yyval.a) = (yyvsp[0].a);}
-#line 1575 "ast.tab.c"
+#line 1955 "ast.tab.c"
     break;
 
-  case 12: /* list: list stmt  */
-#line 384 "ast.y"
+  case 20: /* list: list stmt  */
+#line 707 "ast.y"
                             { (yyval.a) = newast('L', (yyvsp[-1].a), (yyvsp[0].a));	}
-#line 1581 "ast.tab.c"
+#line 1961 "ast.tab.c"
     break;
 
-  case 13: /* exp: exp '+' exp  */
-#line 388 "ast.y"
+  case 21: /* exp: exp '+' exp  */
+#line 711 "ast.y"
                      {(yyval.a) = newast('+',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1587 "ast.tab.c"
+#line 1967 "ast.tab.c"
     break;
 
-  case 14: /* exp: exp '-' exp  */
-#line 389 "ast.y"
+  case 22: /* exp: exp '-' exp  */
+#line 712 "ast.y"
                      {(yyval.a) = newast('-',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1593 "ast.tab.c"
+#line 1973 "ast.tab.c"
     break;
 
-  case 15: /* exp: exp '*' exp  */
-#line 390 "ast.y"
+  case 23: /* exp: exp '*' exp  */
+#line 713 "ast.y"
                      {(yyval.a) = newast('*',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1599 "ast.tab.c"
+#line 1979 "ast.tab.c"
     break;
 
-  case 16: /* exp: exp '/' exp  */
-#line 391 "ast.y"
+  case 24: /* exp: exp '/' exp  */
+#line 714 "ast.y"
                      {(yyval.a) = newast('/',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1605 "ast.tab.c"
+#line 1985 "ast.tab.c"
     break;
 
-  case 17: /* exp: exp '^' exp  */
-#line 392 "ast.y"
+  case 25: /* exp: exp '^' exp  */
+#line 715 "ast.y"
                      {(yyval.a) = newast('^',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1611 "ast.tab.c"
+#line 1991 "ast.tab.c"
     break;
 
-  case 18: /* exp: exp CMP exp  */
-#line 393 "ast.y"
+  case 26: /* exp: exp CMP exp  */
+#line 716 "ast.y"
                      {(yyval.a) = newcmp((yyvsp[-1].fn),(yyvsp[-2].a),(yyvsp[0].a));}
-#line 1617 "ast.tab.c"
+#line 1997 "ast.tab.c"
     break;
 
-  case 19: /* exp: '(' exp ')'  */
-#line 394 "ast.y"
+  case 27: /* exp: '(' exp ')'  */
+#line 717 "ast.y"
                      {(yyval.a) = (yyvsp[-1].a);}
-#line 1623 "ast.tab.c"
+#line 2003 "ast.tab.c"
     break;
 
-  case 20: /* exp: '-' exp  */
-#line 395 "ast.y"
+  case 28: /* exp: '-' exp  */
+#line 718 "ast.y"
                            {(yyval.a) = newast('M',(yyvsp[0].a),NULL);}
-#line 1629 "ast.tab.c"
+#line 2009 "ast.tab.c"
     break;
 
-  case 21: /* exp: NUM  */
-#line 396 "ast.y"
+  case 29: /* exp: NUM  */
+#line 719 "ast.y"
              {(yyval.a) = newnum((yyvsp[0].flo));}
-#line 1635 "ast.tab.c"
+#line 2015 "ast.tab.c"
     break;
 
-  case 22: /* exp: VARS  */
-#line 397 "ast.y"
-              {(yyval.a) = newValorVal((yyvsp[0].inter));}
-#line 1641 "ast.tab.c"
+  case 30: /* exp: VARS  */
+#line 720 "ast.y"
+              {(yyval.a) = newValorVal((yyvsp[0].str));}
+#line 2021 "ast.tab.c"
     break;
 
-  case 23: /* exp: VARS '[' exp ']'  */
-#line 398 "ast.y"
-                          {(yyval.a) = newarrayval((yyvsp[-3].inter), (yyvsp[-1].a));}
-#line 1647 "ast.tab.c"
+  case 31: /* exp: VARS '[' exp ']'  */
+#line 721 "ast.y"
+                          {(yyval.a) = newarrayval((yyvsp[-3].str), (yyvsp[-1].a));}
+#line 2027 "ast.tab.c"
     break;
 
-  case 24: /* exp: STRING  */
-#line 399 "ast.y"
+  case 32: /* exp: STRING  */
+#line 722 "ast.y"
                 {(yyval.a) = newstr((yyvsp[0].str));}
-#line 1653 "ast.tab.c"
+#line 2033 "ast.tab.c"
     break;
 
 
-#line 1657 "ast.tab.c"
+#line 2037 "ast.tab.c"
 
       default: break;
     }
@@ -1846,20 +2226,16 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 403 "ast.y"
+#line 726 "ast.y"
 
 
 #include "lex.yy.c"
 
 int main(){
-	// Inicializa arrays
-	for (int i = 0; i < 26; i++) {
-		array_sizes[i] = 0;
-		for (int j = 0; j < MAX_ARRAY_SIZE; j++) {
-			str_var[i][j] = NULL;
-			var[i][j] = 0.0;
-		}
+	for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+		variable_table[i] = NULL;
 	}
+
 	
 	yyin=fopen("entrada.txt","r");
 	yyparse();
@@ -1867,11 +2243,22 @@ int main(){
 	fclose(yyin);
 
 	// Libera memória das strings
-	for (int i = 0; i < 26; i++) {
-		for (int j = 0; j < MAX_ARRAY_SIZE; j++) {
-			if (str_var[i][j]) free(str_var[i][j]);
+	for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+		Variable* var = variable_table[i];
+		while (var != NULL) {
+			Variable* next = var->next;
+			
+			// Libera strings do array
+			for (int j = 0; j < MAX_ARRAY_SIZE; j++) {
+				if (var->strings[j]) free(var->strings[j]);
+			}
+			
+			free(var->name);
+			free(var);
+			var = next;
 		}
 	}
+	
 	
 return 0;
 }

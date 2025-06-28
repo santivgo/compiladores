@@ -3,19 +3,21 @@
 %}
 
 NUM [0-9]+\.?[0-9]*
-VARS[a-z]
+VARS[a-zA-Z][a-zA-Z0-9_]*
 STRING \"([^"\\]|\\.)*\"   
 FIM "FIM"
 IF "IF"
 ELSE "ELSE"
 WHILE "WHILE"
 PRINT "PRINT"
+SCAN "SCAN"    
+
 
 
 %%
 
 {VARS} {
-	yylval.inter = *yytext - 'a';
+	yylval.str = strdup(yytext);
 	return VARS;
 	}
 
@@ -58,7 +60,7 @@ PRINT "PRINT"
 	return STRING;
 }
 
-[-+()=/*^{};[\]] {return *yytext;}
+[-+()=/*^{};[\],] {return *yytext;} 
 			
 
 ">" {yylval.fn = 1; return CMP; }
@@ -74,6 +76,7 @@ PRINT "PRINT"
 {ELSE} {return ELSE;}
 {WHILE} {return WHILE;}
 {PRINT} {return PRINT;}
+{SCAN} {return SCAN;}  
 [\ \n\t]*	{;}
 "//".* {;}
 %%
