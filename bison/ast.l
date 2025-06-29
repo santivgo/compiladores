@@ -3,7 +3,7 @@
 %}
 
 NUM [0-9]+\.?[0-9]*
-VARS[a-zA-Z][a-zA-Z0-9_]*
+VARS[a-z]
 STRING \"([^"\\]|\\.)*\"   
 FIM "FIM"
 IF "IF"
@@ -17,7 +17,7 @@ SCAN "SCAN"
 %%
 
 {VARS} {
-	yylval.str = strdup(yytext);
+	yylval.inter = *yytext - 'a';
 	return VARS;
 	}
 
