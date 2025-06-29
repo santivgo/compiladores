@@ -75,6 +75,12 @@ typedef struct symasgn { /*Estrutura para um nó de atribuição. Para atrubuir 
 	Ast *v;
 }Symasgn;
 
+typedef struct printargs {
+    int nodetype;
+    Ast **args;     // Array de argumentos
+    int count;      // Número de argumentos
+}Printargs;
+
 // ARRAYS PARA VARIÁVEIS NUMÉRICAS E STRINGS (AGORA SÃO BIDIMENSIONAIS)
 double var[26][MAX_ARRAY_SIZE];     // var[variável][índice]
 char* str_var[26][MAX_ARRAY_SIZE];  // str_var[variável][índice]
@@ -243,6 +249,17 @@ Ast * newValorVal(int s) { /*Função que recupera o nome/referência de uma var
 	
 }
 
+Ast * newprintargs(Ast **args, int count) {
+    Printargs *a = (Printargs*) malloc(sizeof(Printargs));
+    if(!a) {
+        printf("out of space");
+        exit(0);
+    }
+    a->nodetype = 'Q';  // 'Q' para print com múltiplos argumentos
+    a->args = args;
+    a->count = count;
+    return (Ast*)a;
+}
 
 char* read_string() {
     char* buffer = malloc(1000);  // Buffer temporário
@@ -489,7 +506,10 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 		case '4': v = (eval(a->l) == eval(a->r))? 1 : 0; break;
 		case '5': v = (eval(a->l) >= eval(a->r))? 1 : 0; break;
 		case '6': v = (eval(a->l) <= eval(a->r))? 1 : 0; break;
-		
+		case '7': v = (eval(a->l) != 0 && eval(a->r) != 0) ? 1 : 0; break; // &&
+		case '8': v = (eval(a->l) != 0 || eval(a->r) != 0) ? 1 : 0; break; // ||
+		case '!': v = (eval(a->l) == 0) ? 1 : 0; break; 
+	
 		case '=':
 			if (((Symasgn *)a)->v->nodetype == 'S') {
 				aux = ((Symasgn *)a)->s;
@@ -549,6 +569,51 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 				}
 			}
 			break;  // ✅ Um só break para todo o case 'P'
+		case 'Q': {
+			// Print com múltiplos argumentos
+			Printargs *print_node = (Printargs *)a;
+			
+			// Conta quantos argumentos temos
+			int count = 0;
+			while (print_node->args[count] != NULL) count++;
+			
+			// Imprime cada argumento
+			for (int i = 0; i < count; i++) {
+				Ast *arg = print_node->args[i];
+				
+				if (arg->nodetype == 'S') {
+					// É uma string - apenas avalia (já imprime)
+					eval(arg);
+				} else if (arg->nodetype == 'A') {
+					// Acesso a array
+					int var_index = ((Arrayval *)arg)->var;
+					int array_index = (int)eval(((Arrayval *)arg)->index);
+					
+					if (array_index >= 0 && array_index < MAX_ARRAY_SIZE) {
+						if (str_var[var_index][array_index] != NULL) {
+							printf("%s", str_var[var_index][array_index]);
+						} else {
+							printf("%.2f", var[var_index][array_index]);
+						}
+					}
+				} else if (arg->nodetype == 'N') {
+					// Variável simples
+					int var_index = ((Varval *)arg)->var;
+					if (str_var[var_index][0] != NULL) {
+						printf("%s", str_var[var_index][0]);
+					} else {
+						printf("%.2f", var[var_index][0]);
+					}
+				} else {
+					// Expressão numérica
+					double result = eval(arg);
+					printf("%.2f", result);
+				}
+			}
+			
+			v = 0.0;
+			break;
+		}
 
 		default: printf("internal error: bad node %c\n", a->nodetype);
 				
@@ -570,21 +635,27 @@ void yyerror (char *s){
 	char* str; 
 	Ast *a;
 	Ast **array_ptr;  // Para lista de elementos de array
+    Ast **print_args; // NOVO: Para argumentos do print
 
 	}
 
 %token <flo>NUM
 %token <inter>VARS
+%token <fn> LOGICAL NOT
 %token <str>STRING    
 %token FIM IF ELSE WHILE PRINT SCAN
 %token <fn> CMP
 
+%left LOGICAL        
+%right NOT          
 %right '='
 %left '+' '-'
 %left '*' '/' '^'
 
 %type <a> exp list stmt prog array_literal
 %type <array_ptr> array_elements
+%type <print_args> print_arguments 
+
 
 
 %nonassoc IFX NEG
@@ -608,7 +679,7 @@ stmt: IF '(' exp ')' '{' list '}' %prec IFX {$$ = newflow('I', $3, $6, NULL);}
 	| VARS '[' exp ']' '=' exp {$$ = newarrayasgn($1, $3, $6);} 
 	| VARS '=' array_literal {$$ = newarrayvarasgn($1, $3);}     // NOVA REGRA: b = [1,2,3]
     | VARS '=' VARS {$$ = newarrayvarasgn($1, newValorVal($3));} // NOVA REGRA: b = a (cópia de array)
-	| PRINT '(' exp ')' { $$ = newast('P',$3,NULL);}
+    | PRINT '(' print_arguments ')' { $$ = newprintargs($3, -1);} // MODIFICADO
 	| SCAN '(' VARS ')' { $$ = newscan($3, NULL);}              // SCAN(variável)
     | SCAN '(' VARS '[' exp ']' ')' { $$ = newscan($3, $5);}    // SCAN(array[índice])
 	;
@@ -655,6 +726,26 @@ array_elements: exp {
 list:	  stmt{$$ = $1;}
 		| list stmt { $$ = newast('L', $1, $2);	}
 		;
+
+print_arguments: exp {
+        // Primeiro argumento
+        Ast **args = malloc(sizeof(Ast*) * (MAX_ARRAY_ELEMENTS + 1));
+        args[0] = $1;
+        args[1] = NULL;  // Marca o fim
+        $$ = args;
+    }
+    | print_arguments ',' exp {
+        // Adiciona mais um argumento
+        int count = 0;
+        while ($1[count] != NULL) count++;  // Conta argumentos existentes
+        
+        if (count < MAX_ARRAY_ELEMENTS) {
+            $1[count] = $3;
+            $1[count + 1] = NULL;  // Marca o fim
+        }
+        $$ = $1;
+    }
+    ;
 	
 exp: 
 	 exp '+' exp {$$ = newast('+',$1,$3);}		/*Expressões matemáticas*/
@@ -663,6 +754,8 @@ exp:
 	|exp '/' exp {$$ = newast('/',$1,$3);}
 	|exp '^' exp {$$ = newast('^',$1,$3);}
 	|exp CMP exp {$$ = newcmp($2,$1,$3);}		/*Testes condicionais*/
+	|exp LOGICAL exp {$$ = newcmp($2,$1,$3);}  // NOVA REGRA PARA && e ||
+    |NOT exp %prec NOT {$$ = newast('!', $2, NULL);}  // NOVA REGRA PARA !
 	|'(' exp ')' {$$ = $2;}
 	|'-' exp %prec NEG {$$ = newast('M',$2,NULL);}
 	|NUM {$$ = newnum($1);}						/*token de um número*/

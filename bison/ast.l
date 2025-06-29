@@ -69,6 +69,11 @@ SCAN "SCAN"
 "==" {yylval.fn = 4; return CMP; }
 ">=" {yylval.fn = 5; return CMP; }
 "<=" {yylval.fn = 6; return CMP; }
+"&&" {yylval.fn = 7; return LOGICAL; }
+"||" {yylval.fn = 8; return LOGICAL; }
+"!" {yylval.fn = 9; return NOT;}  // Adicionar valor para NOT
+
+
 
 
 {FIM} {return FIM;}
