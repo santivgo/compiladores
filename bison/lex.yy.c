@@ -871,48 +871,48 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 77 "ast.l"
+#line 79 "ast.l"
 {return FIM;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 78 "ast.l"
+#line 80 "ast.l"
 {return IF;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 79 "ast.l"
+#line 81 "ast.l"
 {return ELSE;}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 80 "ast.l"
+#line 82 "ast.l"
 {return WHILE;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 81 "ast.l"
+#line 83 "ast.l"
 {return PRINT;}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 82 "ast.l"
+#line 84 "ast.l"
 {return SCAN;}  
 	YY_BREAK
 case 20:
 /* rule 20 can match eol */
 YY_RULE_SETUP
-#line 83 "ast.l"
+#line 85 "ast.l"
 {;}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 84 "ast.l"
+#line 86 "ast.l"
 {;}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 85 "ast.l"
+#line 87 "ast.l"
 ECHO;
 	YY_BREAK
 #line 919 "lex.yy.c"
@@ -1920,5 +1920,5 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 85 "ast.l"
+#line 87 "ast.l"
 

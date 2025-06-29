@@ -85,7 +85,6 @@ typedef struct printargs {
 double var[26][MAX_ARRAY_SIZE];     // var[variável][índice]
 char* str_var[26][MAX_ARRAY_SIZE];  // str_var[variável][índice]
 int array_sizes[26];  // tamanho atual de cada array
-int aux;
 
 Ast * newarraylit(Ast **elements, int count) {
     Arraylit *a = (Arraylit*) malloc(sizeof(Arraylit));
@@ -298,14 +297,12 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 	switch(a->nodetype) {
 		case 'K': v = ((Numval *)a)->number; break; 	/*Recupera um número*/
 		case 'N': 
-			// Verifica se existe uma string armazenada nesta variável (índice 0)
-			if (str_var[((Varval *)a)->var][0] != NULL) {
-				printf("%s", str_var[((Varval *)a)->var][0]);
-				v = 0.0;
-			} else {
-				v = var[((Varval *)a)->var][0]; // número (índice 0)
-			}
-			break;
+		if (str_var[((Varval *)a)->var][0] != NULL) {
+			v = 0.0;  // String como valor numérico = 0
+		} else {
+			v = var[((Varval *)a)->var][0]; // número (índice 0)
+		}
+		break;
 		
 		// NOVO CASO PARA ACESSO A ARRAYS
 		case 'A': {
@@ -359,38 +356,38 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 			break;
 		}
 		case 'D': {
-            int var_index = ((Scanval *)a)->var;
-            char input_buffer[1000];
+           int var_index = ((Scanval *)a)->var;
+    char input_buffer[1000];
+    
+    if (((Scanval *)a)->index == NULL) {
+        fflush(stdout);
+        
+        if (fgets(input_buffer, sizeof(input_buffer), stdin)) {
+            // Remove newline
+            int len = strlen(input_buffer);
+            if (len > 0 && input_buffer[len-1] == '\n') {
+                input_buffer[len-1] = '\0';
+            }
             
-            if (((Scanval *)a)->index == NULL) {
-                fflush(stdout);
-                
-                if (fgets(input_buffer, sizeof(input_buffer), stdin)) {
-                    // Remove newline
-                    int len = strlen(input_buffer);
-                    if (len > 0 && input_buffer[len-1] == '\n') {
-                        input_buffer[len-1] = '\0';
-                    }
-                    
-                    if (is_number(input_buffer)) {
-                        // É um número
-                        v = atof(input_buffer);
-                        var[var_index][0] = v;
-                        // Limpa string se existir
-                        if (str_var[var_index][0]) {
-                            free(str_var[var_index][0]);
-                            str_var[var_index][0] = NULL;
-                        }
-                    } else {
-                        // É uma string
-                        if (str_var[var_index][0]) {
-                            free(str_var[var_index][0]);
-                        }
-                        str_var[var_index][0] = strdup(input_buffer);
-                        var[var_index][0] = 0.0;  // Zera valor numérico
-                        v = 0.0;
-                    }
+            if (is_number(input_buffer)) {
+                // É um número
+                v = atof(input_buffer);
+                var[var_index][0] = v;
+                // Limpa string se existir
+                if (str_var[var_index][0]) {
+                    free(str_var[var_index][0]);
+                    str_var[var_index][0] = NULL;
                 }
+            } else {
+                // É uma string
+                if (str_var[var_index][0]) {
+                    free(str_var[var_index][0]);
+                }
+                str_var[var_index][0] = strdup(input_buffer);
+                var[var_index][0] = 0.0;  // Zera valor numérico
+                v = 0.0;
+            }
+        }
             } else {
                 // Leitura para array
                 int array_index = (int)eval(((Scanval *)a)->index);
@@ -511,17 +508,27 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 		case '!': v = (eval(a->l) == 0) ? 1 : 0; break; 
 	
 		case '=':
-			if (((Symasgn *)a)->v->nodetype == 'S') {
-				aux = ((Symasgn *)a)->s;
-				if (str_var[aux][0]) free(str_var[aux][0]);  // libera string anterior
-				str_var[aux][0] = strdup(((Strval *)((Symasgn *)a)->v)->string);
-				v = 0.0;
-			} else {
-				v = eval(((Symasgn *)a)->v); /*Recupera o valor*/
-				aux = ((Symasgn *)a)->s;	/*Recupera o símbolo/variável*/
-				var[aux][0] = v;				/*Atribui à variável (índice 0)*/
-			}
-			break;
+    {
+        int var_index;  // Variável local
+        if (((Symasgn *)a)->v->nodetype == 'S') {
+            var_index = ((Symasgn *)a)->s;
+            if (str_var[var_index][0]) free(str_var[var_index][0]);
+            str_var[var_index][0] = strdup(((Strval *)((Symasgn *)a)->v)->string);
+            // Limpa o valor numérico quando atribui string
+            var[var_index][0] = 0.0;
+            v = 0.0;
+        } else {
+            v = eval(((Symasgn *)a)->v);
+            var_index = ((Symasgn *)a)->s;
+            var[var_index][0] = v;
+            // Limpa a string quando atribui número
+            if (str_var[var_index][0]) {
+                free(str_var[var_index][0]);
+                str_var[var_index][0] = NULL;
+            }
+        }
+    }
+    break;
 		
 		case 'I':						/*CASO IF*/
 			if (eval(((Flow *)a)->cond) != 0) {	/*executa a condição / teste*/

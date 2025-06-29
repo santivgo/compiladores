@@ -14,8 +14,14 @@ i = 0
 
 print("Digite quantas notas você irá ler: ")
 scan(q)
-print("Contém pesos?  (SIM: 1 NÃO: 0):")
+print("Contém pesos? (SIM: 1 NÃO: 0): ")
 scan(c)
+
+while (!(c == 0 || c == 1)){
+    print("Digite apenas 1 ou 0 para SIM ou NÃO.\n")
+    print("Contém pesos? (SIM: 1 NÃO: 0): ")
+    scan(c)
+}
 
  while (q <= 0){
     print("Digite quantas notas você irá ler: ")
@@ -50,13 +56,53 @@ print("\n")
 
 
 if (c){
-        i = 0
-        while(i < q){
-            sum_pesos += pesos[i];
-            sum_notas += notas[i] * pesos[i];
-        }
-        
+    i = 0
+    while(i < q){
+        k = k + p[i]
+        s = s + n[i] * p[i]
+        i = i + 1
     }
+}else{
+    i = 0
+    while(i<q){
+        s = s + n[i]
+        i = i + 1
+    }
+
+
+}
+
+if (c){
+    f = s / k
+}else{
+    f = s / q
+}
+
+print("Sua nota final é: ", f, "\n")
+
+if (f > 7.0){
+    print("Parabéns, você passou!\n")
+} else{
+        if (f >= 3 && f < 7.0){
+            a = 10 - f
+            print("Você ficou de AF! (Necessário tirar ", a, ")\n")
+            print("Digite sua nota de AF: ")
+            scan(u)
+            if (u >= a)
+            {
+                print("Parabéns, você passou na AF")
+            }
+            else
+            {
+                print("Infelizmente, você foi reprovado.")
+            }
+        }
+        else
+        {
+            print("Infelizmente, não é possível realizar AF com essa nota. Você foi reprovado.")
+        }
+    }
+
 
 
 

@@ -155,7 +155,6 @@ typedef struct printargs {
 double var[26][MAX_ARRAY_SIZE];     // var[variável][índice]
 char* str_var[26][MAX_ARRAY_SIZE];  // str_var[variável][índice]
 int array_sizes[26];  // tamanho atual de cada array
-int aux;
 
 Ast * newarraylit(Ast **elements, int count) {
     Arraylit *a = (Arraylit*) malloc(sizeof(Arraylit));
@@ -368,14 +367,12 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 	switch(a->nodetype) {
 		case 'K': v = ((Numval *)a)->number; break; 	/*Recupera um número*/
 		case 'N': 
-			// Verifica se existe uma string armazenada nesta variável (índice 0)
-			if (str_var[((Varval *)a)->var][0] != NULL) {
-				printf("%s", str_var[((Varval *)a)->var][0]);
-				v = 0.0;
-			} else {
-				v = var[((Varval *)a)->var][0]; // número (índice 0)
-			}
-			break;
+		if (str_var[((Varval *)a)->var][0] != NULL) {
+			v = 0.0;  // String como valor numérico = 0
+		} else {
+			v = var[((Varval *)a)->var][0]; // número (índice 0)
+		}
+		break;
 		
 		// NOVO CASO PARA ACESSO A ARRAYS
 		case 'A': {
@@ -429,38 +426,38 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 			break;
 		}
 		case 'D': {
-            int var_index = ((Scanval *)a)->var;
-            char input_buffer[1000];
+           int var_index = ((Scanval *)a)->var;
+    char input_buffer[1000];
+    
+    if (((Scanval *)a)->index == NULL) {
+        fflush(stdout);
+        
+        if (fgets(input_buffer, sizeof(input_buffer), stdin)) {
+            // Remove newline
+            int len = strlen(input_buffer);
+            if (len > 0 && input_buffer[len-1] == '\n') {
+                input_buffer[len-1] = '\0';
+            }
             
-            if (((Scanval *)a)->index == NULL) {
-                fflush(stdout);
-                
-                if (fgets(input_buffer, sizeof(input_buffer), stdin)) {
-                    // Remove newline
-                    int len = strlen(input_buffer);
-                    if (len > 0 && input_buffer[len-1] == '\n') {
-                        input_buffer[len-1] = '\0';
-                    }
-                    
-                    if (is_number(input_buffer)) {
-                        // É um número
-                        v = atof(input_buffer);
-                        var[var_index][0] = v;
-                        // Limpa string se existir
-                        if (str_var[var_index][0]) {
-                            free(str_var[var_index][0]);
-                            str_var[var_index][0] = NULL;
-                        }
-                    } else {
-                        // É uma string
-                        if (str_var[var_index][0]) {
-                            free(str_var[var_index][0]);
-                        }
-                        str_var[var_index][0] = strdup(input_buffer);
-                        var[var_index][0] = 0.0;  // Zera valor numérico
-                        v = 0.0;
-                    }
+            if (is_number(input_buffer)) {
+                // É um número
+                v = atof(input_buffer);
+                var[var_index][0] = v;
+                // Limpa string se existir
+                if (str_var[var_index][0]) {
+                    free(str_var[var_index][0]);
+                    str_var[var_index][0] = NULL;
                 }
+            } else {
+                // É uma string
+                if (str_var[var_index][0]) {
+                    free(str_var[var_index][0]);
+                }
+                str_var[var_index][0] = strdup(input_buffer);
+                var[var_index][0] = 0.0;  // Zera valor numérico
+                v = 0.0;
+            }
+        }
             } else {
                 // Leitura para array
                 int array_index = (int)eval(((Scanval *)a)->index);
@@ -581,17 +578,27 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
 		case '!': v = (eval(a->l) == 0) ? 1 : 0; break; 
 	
 		case '=':
-			if (((Symasgn *)a)->v->nodetype == 'S') {
-				aux = ((Symasgn *)a)->s;
-				if (str_var[aux][0]) free(str_var[aux][0]);  // libera string anterior
-				str_var[aux][0] = strdup(((Strval *)((Symasgn *)a)->v)->string);
-				v = 0.0;
-			} else {
-				v = eval(((Symasgn *)a)->v); /*Recupera o valor*/
-				aux = ((Symasgn *)a)->s;	/*Recupera o símbolo/variável*/
-				var[aux][0] = v;				/*Atribui à variável (índice 0)*/
-			}
-			break;
+    {
+        int var_index;  // Variável local
+        if (((Symasgn *)a)->v->nodetype == 'S') {
+            var_index = ((Symasgn *)a)->s;
+            if (str_var[var_index][0]) free(str_var[var_index][0]);
+            str_var[var_index][0] = strdup(((Strval *)((Symasgn *)a)->v)->string);
+            // Limpa o valor numérico quando atribui string
+            var[var_index][0] = 0.0;
+            v = 0.0;
+        } else {
+            v = eval(((Symasgn *)a)->v);
+            var_index = ((Symasgn *)a)->s;
+            var[var_index][0] = v;
+            // Limpa a string quando atribui número
+            if (str_var[var_index][0]) {
+                free(str_var[var_index][0]);
+                str_var[var_index][0] = NULL;
+            }
+        }
+    }
+    break;
 		
 		case 'I':						/*CASO IF*/
 			if (eval(((Flow *)a)->cond) != 0) {	/*executa a condição / teste*/
@@ -697,7 +704,7 @@ void yyerror (char *s){
 }
 
 
-#line 701 "ast.tab.c"
+#line 708 "ast.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -760,7 +767,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 631 "ast.y"
+#line 638 "ast.y"
 
 	float flo;
 	int fn;
@@ -772,7 +779,7 @@ union YYSTYPE
 
 	
 
-#line 776 "ast.tab.c"
+#line 783 "ast.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -1218,10 +1225,10 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   665,   665,   668,   669,   675,   676,   677,   678,   679,
-     680,   681,   682,   683,   684,   689,   694,   706,   713,   726,
-     727,   730,   737,   751,   752,   753,   754,   755,   756,   757,
-     758,   759,   760,   761,   762,   763,   764
+       0,   672,   672,   675,   676,   682,   683,   684,   685,   686,
+     687,   688,   689,   690,   691,   696,   701,   713,   720,   733,
+     734,   737,   744,   758,   759,   760,   761,   762,   763,   764,
+     765,   766,   767,   768,   769,   770,   771
 };
 #endif
 
@@ -1850,89 +1857,89 @@ yyreduce:
   switch (yyn)
     {
   case 3: /* prog: stmt  */
-#line 668 "ast.y"
+#line 675 "ast.y"
                         {eval((yyvsp[0].a));}
-#line 1856 "ast.tab.c"
+#line 1863 "ast.tab.c"
     break;
 
   case 4: /* prog: prog stmt  */
-#line 669 "ast.y"
+#line 676 "ast.y"
                     {eval((yyvsp[0].a));}
-#line 1862 "ast.tab.c"
+#line 1869 "ast.tab.c"
     break;
 
   case 5: /* stmt: IF '(' exp ')' '{' list '}'  */
-#line 675 "ast.y"
+#line 682 "ast.y"
                                             {(yyval.a) = newflow('I', (yyvsp[-4].a), (yyvsp[-1].a), NULL);}
-#line 1868 "ast.tab.c"
+#line 1875 "ast.tab.c"
     break;
 
   case 6: /* stmt: IF '(' exp ')' '{' list '}' ELSE '{' list '}'  */
-#line 676 "ast.y"
+#line 683 "ast.y"
                                                         {(yyval.a) = newflow('I', (yyvsp[-8].a), (yyvsp[-5].a), (yyvsp[-1].a));}
-#line 1874 "ast.tab.c"
+#line 1881 "ast.tab.c"
     break;
 
   case 7: /* stmt: WHILE '(' exp ')' '{' list '}'  */
-#line 677 "ast.y"
+#line 684 "ast.y"
                                          {(yyval.a) = newflow('W', (yyvsp[-4].a), (yyvsp[-1].a), NULL);}
-#line 1880 "ast.tab.c"
+#line 1887 "ast.tab.c"
     break;
 
   case 8: /* stmt: VARS '=' exp  */
-#line 678 "ast.y"
+#line 685 "ast.y"
                        {(yyval.a) = newasgn((yyvsp[-2].inter),(yyvsp[0].a));}
-#line 1886 "ast.tab.c"
+#line 1893 "ast.tab.c"
     break;
 
   case 9: /* stmt: VARS '[' exp ']' '=' exp  */
-#line 679 "ast.y"
+#line 686 "ast.y"
                                    {(yyval.a) = newarrayasgn((yyvsp[-5].inter), (yyvsp[-3].a), (yyvsp[0].a));}
-#line 1892 "ast.tab.c"
+#line 1899 "ast.tab.c"
     break;
 
   case 10: /* stmt: VARS '=' array_literal  */
-#line 680 "ast.y"
+#line 687 "ast.y"
                                  {(yyval.a) = newarrayvarasgn((yyvsp[-2].inter), (yyvsp[0].a));}
-#line 1898 "ast.tab.c"
+#line 1905 "ast.tab.c"
     break;
 
   case 11: /* stmt: VARS '=' VARS  */
-#line 681 "ast.y"
+#line 688 "ast.y"
                     {(yyval.a) = newarrayvarasgn((yyvsp[-2].inter), newValorVal((yyvsp[0].inter)));}
-#line 1904 "ast.tab.c"
+#line 1911 "ast.tab.c"
     break;
 
   case 12: /* stmt: PRINT '(' print_arguments ')'  */
-#line 682 "ast.y"
+#line 689 "ast.y"
                                     { (yyval.a) = newprintargs((yyvsp[-1].print_args), -1);}
-#line 1910 "ast.tab.c"
+#line 1917 "ast.tab.c"
     break;
 
   case 13: /* stmt: SCAN '(' VARS ')'  */
-#line 683 "ast.y"
+#line 690 "ast.y"
                             { (yyval.a) = newscan((yyvsp[-1].inter), NULL);}
-#line 1916 "ast.tab.c"
+#line 1923 "ast.tab.c"
     break;
 
   case 14: /* stmt: SCAN '(' VARS '[' exp ']' ')'  */
-#line 684 "ast.y"
+#line 691 "ast.y"
                                     { (yyval.a) = newscan((yyvsp[-4].inter), (yyvsp[-2].a));}
-#line 1922 "ast.tab.c"
+#line 1929 "ast.tab.c"
     break;
 
   case 15: /* array_literal: '[' ']'  */
-#line 689 "ast.y"
+#line 696 "ast.y"
                        {
         // Array vazio
         Ast **elements = malloc(sizeof(Ast*) * 1);
         (yyval.a) = newarraylit(elements, 0);
     }
-#line 1932 "ast.tab.c"
+#line 1939 "ast.tab.c"
     break;
 
   case 16: /* array_literal: '[' array_elements ']'  */
-#line 694 "ast.y"
+#line 701 "ast.y"
                              {
         // Array com elementos
         // Conta quantos elementos temos
@@ -1942,11 +1949,11 @@ yyreduce:
         
         (yyval.a) = newarraylit((yyvsp[-1].array_ptr), count);
     }
-#line 1946 "ast.tab.c"
+#line 1953 "ast.tab.c"
     break;
 
   case 17: /* array_elements: exp  */
-#line 706 "ast.y"
+#line 713 "ast.y"
                     {
         // Primeiro elemento
         Ast **elements = malloc(sizeof(Ast*) * (MAX_ARRAY_ELEMENTS + 1));
@@ -1954,11 +1961,11 @@ yyreduce:
         elements[1] = NULL;  // Marca o fim
         (yyval.array_ptr) = elements;
     }
-#line 1958 "ast.tab.c"
+#line 1965 "ast.tab.c"
     break;
 
   case 18: /* array_elements: array_elements ',' exp  */
-#line 713 "ast.y"
+#line 720 "ast.y"
                              {
         // Adiciona mais um elemento
         int count = 0;
@@ -1970,23 +1977,23 @@ yyreduce:
         }
         (yyval.array_ptr) = (yyvsp[-2].array_ptr);
     }
-#line 1974 "ast.tab.c"
+#line 1981 "ast.tab.c"
     break;
 
   case 19: /* list: stmt  */
-#line 726 "ast.y"
+#line 733 "ast.y"
               {(yyval.a) = (yyvsp[0].a);}
-#line 1980 "ast.tab.c"
+#line 1987 "ast.tab.c"
     break;
 
   case 20: /* list: list stmt  */
-#line 727 "ast.y"
+#line 734 "ast.y"
                             { (yyval.a) = newast('L', (yyvsp[-1].a), (yyvsp[0].a));	}
-#line 1986 "ast.tab.c"
+#line 1993 "ast.tab.c"
     break;
 
   case 21: /* print_arguments: exp  */
-#line 730 "ast.y"
+#line 737 "ast.y"
                      {
         // Primeiro argumento
         Ast **args = malloc(sizeof(Ast*) * (MAX_ARRAY_ELEMENTS + 1));
@@ -1994,11 +2001,11 @@ yyreduce:
         args[1] = NULL;  // Marca o fim
         (yyval.print_args) = args;
     }
-#line 1998 "ast.tab.c"
+#line 2005 "ast.tab.c"
     break;
 
   case 22: /* print_arguments: print_arguments ',' exp  */
-#line 737 "ast.y"
+#line 744 "ast.y"
                               {
         // Adiciona mais um argumento
         int count = 0;
@@ -2010,95 +2017,95 @@ yyreduce:
         }
         (yyval.print_args) = (yyvsp[-2].print_args);
     }
-#line 2014 "ast.tab.c"
+#line 2021 "ast.tab.c"
     break;
 
   case 23: /* exp: exp '+' exp  */
-#line 751 "ast.y"
+#line 758 "ast.y"
                      {(yyval.a) = newast('+',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2020 "ast.tab.c"
+#line 2027 "ast.tab.c"
     break;
 
   case 24: /* exp: exp '-' exp  */
-#line 752 "ast.y"
+#line 759 "ast.y"
                      {(yyval.a) = newast('-',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2026 "ast.tab.c"
+#line 2033 "ast.tab.c"
     break;
 
   case 25: /* exp: exp '*' exp  */
-#line 753 "ast.y"
+#line 760 "ast.y"
                      {(yyval.a) = newast('*',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2032 "ast.tab.c"
+#line 2039 "ast.tab.c"
     break;
 
   case 26: /* exp: exp '/' exp  */
-#line 754 "ast.y"
+#line 761 "ast.y"
                      {(yyval.a) = newast('/',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2038 "ast.tab.c"
+#line 2045 "ast.tab.c"
     break;
 
   case 27: /* exp: exp '^' exp  */
-#line 755 "ast.y"
+#line 762 "ast.y"
                      {(yyval.a) = newast('^',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2044 "ast.tab.c"
+#line 2051 "ast.tab.c"
     break;
 
   case 28: /* exp: exp CMP exp  */
-#line 756 "ast.y"
+#line 763 "ast.y"
                      {(yyval.a) = newcmp((yyvsp[-1].fn),(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2050 "ast.tab.c"
+#line 2057 "ast.tab.c"
     break;
 
   case 29: /* exp: exp LOGICAL exp  */
-#line 757 "ast.y"
+#line 764 "ast.y"
                          {(yyval.a) = newcmp((yyvsp[-1].fn),(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2056 "ast.tab.c"
+#line 2063 "ast.tab.c"
     break;
 
   case 30: /* exp: NOT exp  */
-#line 758 "ast.y"
+#line 765 "ast.y"
                        {(yyval.a) = newast('!', (yyvsp[0].a), NULL);}
-#line 2062 "ast.tab.c"
+#line 2069 "ast.tab.c"
     break;
 
   case 31: /* exp: '(' exp ')'  */
-#line 759 "ast.y"
+#line 766 "ast.y"
                      {(yyval.a) = (yyvsp[-1].a);}
-#line 2068 "ast.tab.c"
+#line 2075 "ast.tab.c"
     break;
 
   case 32: /* exp: '-' exp  */
-#line 760 "ast.y"
+#line 767 "ast.y"
                            {(yyval.a) = newast('M',(yyvsp[0].a),NULL);}
-#line 2074 "ast.tab.c"
+#line 2081 "ast.tab.c"
     break;
 
   case 33: /* exp: NUM  */
-#line 761 "ast.y"
+#line 768 "ast.y"
              {(yyval.a) = newnum((yyvsp[0].flo));}
-#line 2080 "ast.tab.c"
+#line 2087 "ast.tab.c"
     break;
 
   case 34: /* exp: VARS  */
-#line 762 "ast.y"
+#line 769 "ast.y"
               {(yyval.a) = newValorVal((yyvsp[0].inter));}
-#line 2086 "ast.tab.c"
+#line 2093 "ast.tab.c"
     break;
 
   case 35: /* exp: VARS '[' exp ']'  */
-#line 763 "ast.y"
+#line 770 "ast.y"
                           {(yyval.a) = newarrayval((yyvsp[-3].inter), (yyvsp[-1].a));}
-#line 2092 "ast.tab.c"
+#line 2099 "ast.tab.c"
     break;
 
   case 36: /* exp: STRING  */
-#line 764 "ast.y"
+#line 771 "ast.y"
                 {(yyval.a) = newstr((yyvsp[0].str));}
-#line 2098 "ast.tab.c"
+#line 2105 "ast.tab.c"
     break;
 
 
-#line 2102 "ast.tab.c"
+#line 2109 "ast.tab.c"
 
       default: break;
     }
@@ -2291,7 +2298,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 768 "ast.y"
+#line 775 "ast.y"
 
 
 #include "lex.yy.c"
