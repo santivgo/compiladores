@@ -1,6 +1,48 @@
-n = []
-t = 0
+n = [] // notas
+p = [] // pesos
+
+c = 0 // contém pesos?
+
+q = 0 // qtd_notas
+s = 0 // sum_notas 
+k = 0 // sum_pesos
+f = 0 // notafinal
+a = 0 // nota_necessaria
+u = 0 // nota_af
+
+i = 0
+
 print("Digite quantas notas você irá ler: ")
+scan(q)
+print("Contém pesos?  (SIM: 1 NÃO: 0):")
+scan(c)
+
+ while (q <= 0){
+    print("Digite quantas notas você irá ler: ")
+    scan(q)    
+}
+
+
+while (i != qtd_notas){
+        print("Insira a nota" + qtd_notas);
+        scanf("%f", &notas[i]);
+
+        if (!(notas[i] < 0 || notas[i] > 10))
+        {
+            if (COM_PESO)
+            {
+                printf("Insira o peso da nota %d (de %d): ", i + 1, qtd_notas);
+                scanf("%f", &pesos[i]);
+                while (pesos[i] < 0)
+                {
+                    printf("Insira o peso da nota %d (de %d): ", i + 1, qtd_notas);
+                    scanf("%f", &pesos[i]);
+                }
+            }
+            i++;
+        }
+    }
+
 
 
 //while(a<10){

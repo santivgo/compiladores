@@ -65,7 +65,7 @@ SCAN "SCAN"
 
 ">" {yylval.fn = 1; return CMP; }
 "<" {yylval.fn = 2; return CMP; }
-"<>" {yylval.fn = 3; return CMP; }
+"!=" {yylval.fn = 3; return CMP; }
 "==" {yylval.fn = 4; return CMP; }
 ">=" {yylval.fn = 5; return CMP; }
 "<=" {yylval.fn = 6; return CMP; }
