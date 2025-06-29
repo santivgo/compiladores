@@ -511,50 +511,69 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
         
         // NOVO CASO PARA ATRIBUIÇÃO DE ARRAY COMPLETO
         case 'V': {
-            int var_index = ((Arrayvarasgn *)a)->var;
-            Ast *array_expr = ((Arrayvarasgn *)a)->array_expr;
-            
-            // Limpa o array atual
-            clear_array(var_index);
-            
-            if (array_expr->nodetype == 'T') {
-                // Array literal [1, 2, 3] ou []
-                Arraylit *lit = (Arraylit *)array_expr;
-                
-                // Copia os elementos
-                for (int i = 0; i < lit->count && i < MAX_ARRAY_SIZE; i++) {
-                    if (lit->elements[i]->nodetype == 'S') {
-                        // Elemento é string
-                        str_var[var_index][i] = strdup(((Strval *)lit->elements[i])->string);
-                        var[var_index][i] = 0.0;
-                    } else {
-                        // Elemento é número
-                        var[var_index][i] = eval(lit->elements[i]);
-                        str_var[var_index][i] = NULL;
-                    }
-                }
-                array_sizes[var_index] = lit->count;
-                
-            } else if (array_expr->nodetype == 'N') {
-                // Cópia de outro array: b = a
-                int src_var = ((Varval *)array_expr)->var;
-                
-                // Copia todos os elementos do array origem
-                for (int i = 0; i < array_sizes[src_var] && i < MAX_ARRAY_SIZE; i++) {
-                    if (str_var[src_var][i] != NULL) {
-                        str_var[var_index][i] = strdup(str_var[src_var][i]);
-                        var[var_index][i] = 0.0;
-                    } else {
-                        var[var_index][i] = var[src_var][i];
-                        str_var[var_index][i] = NULL;
-                    }
-                }
-                array_sizes[var_index] = array_sizes[src_var];
+    int var_index = ((Arrayvarasgn *)a)->var;
+    Ast *array_expr = ((Arrayvarasgn *)a)->array_expr;
+    
+    
+    // Limpa o array atual
+    clear_array(var_index);
+    
+    if (array_expr->nodetype == 'T') {
+        // Array literal [1, 2, 3] ou []
+        Arraylit *lit = (Arraylit *)array_expr;
+        
+        // Copia os elementos
+        for (int i = 0; i < lit->count && i < MAX_ARRAY_SIZE; i++) {
+            if (lit->elements[i]->nodetype == 'S') {
+                // Elemento é string
+                str_var[var_index][i] = strdup(((Strval *)lit->elements[i])->string);
+                var[var_index][i] = 0.0;
+            } else {
+                // Elemento é número
+                var[var_index][i] = eval(lit->elements[i]);
+                str_var[var_index][i] = NULL;
             }
-            
-            v = 0.0;
-            break;
         }
+        array_sizes[var_index] = lit->count;
+        
+    } else if (array_expr->nodetype == 'N') {
+        // Cópia de outro array: b = a
+        int src_var = ((Varval *)array_expr)->var;
+        
+        // *** CORREÇÃO AQUI ***
+        // Se a variável fonte é uma variável simples (não array), 
+        // copie apenas o valor do índice 0
+        if (array_sizes[src_var] == 0) {
+            // Variável simples - copia apenas o valor único
+            if (str_var[src_var][0] != NULL) {
+                str_var[var_index][0] = strdup(str_var[src_var][0]);
+                var[var_index][0] = 0.0;
+            } else {
+                var[var_index][0] = var[src_var][0];
+                str_var[var_index][0] = NULL;
+            }
+            array_sizes[var_index] = 1; // Marca como tendo 1 elemento
+        } else {
+            // Copia todos os elementos do array origem
+            for (int i = 0; i < array_sizes[src_var] && i < MAX_ARRAY_SIZE; i++) {
+                if (str_var[src_var][i] != NULL) {
+                    str_var[var_index][i] = strdup(str_var[src_var][i]);
+                    var[var_index][i] = 0.0;
+                } else {
+                    var[var_index][i] = var[src_var][i];
+                    str_var[var_index][i] = NULL;
+                }
+            }
+            array_sizes[var_index] = array_sizes[src_var];
+        }
+    }
+    
+
+    
+    v = 0.0;
+    break;
+}
+
 		
 		case '+': v = eval(a->l) + eval(a->r); break;	/*Operações "árv esq   +   árv dir"*/
 		case '-': v = eval(a->l) - eval(a->r); break;	/*Operações*/
@@ -704,7 +723,7 @@ void yyerror (char *s){
 }
 
 
-#line 708 "ast.tab.c"
+#line 727 "ast.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -767,7 +786,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 638 "ast.y"
+#line 657 "ast.y"
 
 	float flo;
 	int fn;
@@ -779,7 +798,7 @@ union YYSTYPE
 
 	
 
-#line 783 "ast.tab.c"
+#line 802 "ast.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -1225,10 +1244,10 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   672,   672,   675,   676,   682,   683,   684,   685,   686,
-     687,   688,   689,   690,   691,   696,   701,   713,   720,   733,
-     734,   737,   744,   758,   759,   760,   761,   762,   763,   764,
-     765,   766,   767,   768,   769,   770,   771
+       0,   691,   691,   694,   695,   701,   702,   703,   704,   705,
+     706,   707,   708,   709,   710,   715,   720,   732,   739,   752,
+     753,   756,   763,   777,   778,   779,   780,   781,   782,   783,
+     784,   785,   786,   787,   788,   789,   790
 };
 #endif
 
@@ -1857,89 +1876,89 @@ yyreduce:
   switch (yyn)
     {
   case 3: /* prog: stmt  */
-#line 675 "ast.y"
+#line 694 "ast.y"
                         {eval((yyvsp[0].a));}
-#line 1863 "ast.tab.c"
+#line 1882 "ast.tab.c"
     break;
 
   case 4: /* prog: prog stmt  */
-#line 676 "ast.y"
+#line 695 "ast.y"
                     {eval((yyvsp[0].a));}
-#line 1869 "ast.tab.c"
+#line 1888 "ast.tab.c"
     break;
 
   case 5: /* stmt: IF '(' exp ')' '{' list '}'  */
-#line 682 "ast.y"
+#line 701 "ast.y"
                                             {(yyval.a) = newflow('I', (yyvsp[-4].a), (yyvsp[-1].a), NULL);}
-#line 1875 "ast.tab.c"
+#line 1894 "ast.tab.c"
     break;
 
   case 6: /* stmt: IF '(' exp ')' '{' list '}' ELSE '{' list '}'  */
-#line 683 "ast.y"
+#line 702 "ast.y"
                                                         {(yyval.a) = newflow('I', (yyvsp[-8].a), (yyvsp[-5].a), (yyvsp[-1].a));}
-#line 1881 "ast.tab.c"
+#line 1900 "ast.tab.c"
     break;
 
   case 7: /* stmt: WHILE '(' exp ')' '{' list '}'  */
-#line 684 "ast.y"
+#line 703 "ast.y"
                                          {(yyval.a) = newflow('W', (yyvsp[-4].a), (yyvsp[-1].a), NULL);}
-#line 1887 "ast.tab.c"
+#line 1906 "ast.tab.c"
     break;
 
   case 8: /* stmt: VARS '=' exp  */
-#line 685 "ast.y"
+#line 704 "ast.y"
                        {(yyval.a) = newasgn((yyvsp[-2].inter),(yyvsp[0].a));}
-#line 1893 "ast.tab.c"
+#line 1912 "ast.tab.c"
     break;
 
   case 9: /* stmt: VARS '[' exp ']' '=' exp  */
-#line 686 "ast.y"
+#line 705 "ast.y"
                                    {(yyval.a) = newarrayasgn((yyvsp[-5].inter), (yyvsp[-3].a), (yyvsp[0].a));}
-#line 1899 "ast.tab.c"
+#line 1918 "ast.tab.c"
     break;
 
   case 10: /* stmt: VARS '=' array_literal  */
-#line 687 "ast.y"
+#line 706 "ast.y"
                                  {(yyval.a) = newarrayvarasgn((yyvsp[-2].inter), (yyvsp[0].a));}
-#line 1905 "ast.tab.c"
+#line 1924 "ast.tab.c"
     break;
 
   case 11: /* stmt: VARS '=' VARS  */
-#line 688 "ast.y"
+#line 707 "ast.y"
                     {(yyval.a) = newarrayvarasgn((yyvsp[-2].inter), newValorVal((yyvsp[0].inter)));}
-#line 1911 "ast.tab.c"
+#line 1930 "ast.tab.c"
     break;
 
   case 12: /* stmt: PRINT '(' print_arguments ')'  */
-#line 689 "ast.y"
+#line 708 "ast.y"
                                     { (yyval.a) = newprintargs((yyvsp[-1].print_args), -1);}
-#line 1917 "ast.tab.c"
+#line 1936 "ast.tab.c"
     break;
 
   case 13: /* stmt: SCAN '(' VARS ')'  */
-#line 690 "ast.y"
+#line 709 "ast.y"
                             { (yyval.a) = newscan((yyvsp[-1].inter), NULL);}
-#line 1923 "ast.tab.c"
+#line 1942 "ast.tab.c"
     break;
 
   case 14: /* stmt: SCAN '(' VARS '[' exp ']' ')'  */
-#line 691 "ast.y"
+#line 710 "ast.y"
                                     { (yyval.a) = newscan((yyvsp[-4].inter), (yyvsp[-2].a));}
-#line 1929 "ast.tab.c"
+#line 1948 "ast.tab.c"
     break;
 
   case 15: /* array_literal: '[' ']'  */
-#line 696 "ast.y"
+#line 715 "ast.y"
                        {
         // Array vazio
         Ast **elements = malloc(sizeof(Ast*) * 1);
         (yyval.a) = newarraylit(elements, 0);
     }
-#line 1939 "ast.tab.c"
+#line 1958 "ast.tab.c"
     break;
 
   case 16: /* array_literal: '[' array_elements ']'  */
-#line 701 "ast.y"
+#line 720 "ast.y"
                              {
         // Array com elementos
         // Conta quantos elementos temos
@@ -1949,11 +1968,11 @@ yyreduce:
         
         (yyval.a) = newarraylit((yyvsp[-1].array_ptr), count);
     }
-#line 1953 "ast.tab.c"
+#line 1972 "ast.tab.c"
     break;
 
   case 17: /* array_elements: exp  */
-#line 713 "ast.y"
+#line 732 "ast.y"
                     {
         // Primeiro elemento
         Ast **elements = malloc(sizeof(Ast*) * (MAX_ARRAY_ELEMENTS + 1));
@@ -1961,11 +1980,11 @@ yyreduce:
         elements[1] = NULL;  // Marca o fim
         (yyval.array_ptr) = elements;
     }
-#line 1965 "ast.tab.c"
+#line 1984 "ast.tab.c"
     break;
 
   case 18: /* array_elements: array_elements ',' exp  */
-#line 720 "ast.y"
+#line 739 "ast.y"
                              {
         // Adiciona mais um elemento
         int count = 0;
@@ -1977,23 +1996,23 @@ yyreduce:
         }
         (yyval.array_ptr) = (yyvsp[-2].array_ptr);
     }
-#line 1981 "ast.tab.c"
+#line 2000 "ast.tab.c"
     break;
 
   case 19: /* list: stmt  */
-#line 733 "ast.y"
+#line 752 "ast.y"
               {(yyval.a) = (yyvsp[0].a);}
-#line 1987 "ast.tab.c"
+#line 2006 "ast.tab.c"
     break;
 
   case 20: /* list: list stmt  */
-#line 734 "ast.y"
+#line 753 "ast.y"
                             { (yyval.a) = newast('L', (yyvsp[-1].a), (yyvsp[0].a));	}
-#line 1993 "ast.tab.c"
+#line 2012 "ast.tab.c"
     break;
 
   case 21: /* print_arguments: exp  */
-#line 737 "ast.y"
+#line 756 "ast.y"
                      {
         // Primeiro argumento
         Ast **args = malloc(sizeof(Ast*) * (MAX_ARRAY_ELEMENTS + 1));
@@ -2001,11 +2020,11 @@ yyreduce:
         args[1] = NULL;  // Marca o fim
         (yyval.print_args) = args;
     }
-#line 2005 "ast.tab.c"
+#line 2024 "ast.tab.c"
     break;
 
   case 22: /* print_arguments: print_arguments ',' exp  */
-#line 744 "ast.y"
+#line 763 "ast.y"
                               {
         // Adiciona mais um argumento
         int count = 0;
@@ -2017,95 +2036,95 @@ yyreduce:
         }
         (yyval.print_args) = (yyvsp[-2].print_args);
     }
-#line 2021 "ast.tab.c"
+#line 2040 "ast.tab.c"
     break;
 
   case 23: /* exp: exp '+' exp  */
-#line 758 "ast.y"
+#line 777 "ast.y"
                      {(yyval.a) = newast('+',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2027 "ast.tab.c"
+#line 2046 "ast.tab.c"
     break;
 
   case 24: /* exp: exp '-' exp  */
-#line 759 "ast.y"
+#line 778 "ast.y"
                      {(yyval.a) = newast('-',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2033 "ast.tab.c"
+#line 2052 "ast.tab.c"
     break;
 
   case 25: /* exp: exp '*' exp  */
-#line 760 "ast.y"
+#line 779 "ast.y"
                      {(yyval.a) = newast('*',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2039 "ast.tab.c"
+#line 2058 "ast.tab.c"
     break;
 
   case 26: /* exp: exp '/' exp  */
-#line 761 "ast.y"
+#line 780 "ast.y"
                      {(yyval.a) = newast('/',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2045 "ast.tab.c"
+#line 2064 "ast.tab.c"
     break;
 
   case 27: /* exp: exp '^' exp  */
-#line 762 "ast.y"
+#line 781 "ast.y"
                      {(yyval.a) = newast('^',(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2051 "ast.tab.c"
+#line 2070 "ast.tab.c"
     break;
 
   case 28: /* exp: exp CMP exp  */
-#line 763 "ast.y"
+#line 782 "ast.y"
                      {(yyval.a) = newcmp((yyvsp[-1].fn),(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2057 "ast.tab.c"
+#line 2076 "ast.tab.c"
     break;
 
   case 29: /* exp: exp LOGICAL exp  */
-#line 764 "ast.y"
+#line 783 "ast.y"
                          {(yyval.a) = newcmp((yyvsp[-1].fn),(yyvsp[-2].a),(yyvsp[0].a));}
-#line 2063 "ast.tab.c"
+#line 2082 "ast.tab.c"
     break;
 
   case 30: /* exp: NOT exp  */
-#line 765 "ast.y"
+#line 784 "ast.y"
                        {(yyval.a) = newast('!', (yyvsp[0].a), NULL);}
-#line 2069 "ast.tab.c"
+#line 2088 "ast.tab.c"
     break;
 
   case 31: /* exp: '(' exp ')'  */
-#line 766 "ast.y"
+#line 785 "ast.y"
                      {(yyval.a) = (yyvsp[-1].a);}
-#line 2075 "ast.tab.c"
+#line 2094 "ast.tab.c"
     break;
 
   case 32: /* exp: '-' exp  */
-#line 767 "ast.y"
+#line 786 "ast.y"
                            {(yyval.a) = newast('M',(yyvsp[0].a),NULL);}
-#line 2081 "ast.tab.c"
+#line 2100 "ast.tab.c"
     break;
 
   case 33: /* exp: NUM  */
-#line 768 "ast.y"
+#line 787 "ast.y"
              {(yyval.a) = newnum((yyvsp[0].flo));}
-#line 2087 "ast.tab.c"
+#line 2106 "ast.tab.c"
     break;
 
   case 34: /* exp: VARS  */
-#line 769 "ast.y"
+#line 788 "ast.y"
               {(yyval.a) = newValorVal((yyvsp[0].inter));}
-#line 2093 "ast.tab.c"
+#line 2112 "ast.tab.c"
     break;
 
   case 35: /* exp: VARS '[' exp ']'  */
-#line 770 "ast.y"
+#line 789 "ast.y"
                           {(yyval.a) = newarrayval((yyvsp[-3].inter), (yyvsp[-1].a));}
-#line 2099 "ast.tab.c"
+#line 2118 "ast.tab.c"
     break;
 
   case 36: /* exp: STRING  */
-#line 771 "ast.y"
+#line 790 "ast.y"
                 {(yyval.a) = newstr((yyvsp[0].str));}
-#line 2105 "ast.tab.c"
+#line 2124 "ast.tab.c"
     break;
 
 
-#line 2109 "ast.tab.c"
+#line 2128 "ast.tab.c"
 
       default: break;
     }
@@ -2298,7 +2317,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 775 "ast.y"
+#line 794 "ast.y"
 
 
 #include "lex.yy.c"

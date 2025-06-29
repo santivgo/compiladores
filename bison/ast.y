@@ -441,50 +441,69 @@ double eval(Ast *a) { /*Função que executa operações a partir de um nó*/
         
         // NOVO CASO PARA ATRIBUIÇÃO DE ARRAY COMPLETO
         case 'V': {
-            int var_index = ((Arrayvarasgn *)a)->var;
-            Ast *array_expr = ((Arrayvarasgn *)a)->array_expr;
-            
-            // Limpa o array atual
-            clear_array(var_index);
-            
-            if (array_expr->nodetype == 'T') {
-                // Array literal [1, 2, 3] ou []
-                Arraylit *lit = (Arraylit *)array_expr;
-                
-                // Copia os elementos
-                for (int i = 0; i < lit->count && i < MAX_ARRAY_SIZE; i++) {
-                    if (lit->elements[i]->nodetype == 'S') {
-                        // Elemento é string
-                        str_var[var_index][i] = strdup(((Strval *)lit->elements[i])->string);
-                        var[var_index][i] = 0.0;
-                    } else {
-                        // Elemento é número
-                        var[var_index][i] = eval(lit->elements[i]);
-                        str_var[var_index][i] = NULL;
-                    }
-                }
-                array_sizes[var_index] = lit->count;
-                
-            } else if (array_expr->nodetype == 'N') {
-                // Cópia de outro array: b = a
-                int src_var = ((Varval *)array_expr)->var;
-                
-                // Copia todos os elementos do array origem
-                for (int i = 0; i < array_sizes[src_var] && i < MAX_ARRAY_SIZE; i++) {
-                    if (str_var[src_var][i] != NULL) {
-                        str_var[var_index][i] = strdup(str_var[src_var][i]);
-                        var[var_index][i] = 0.0;
-                    } else {
-                        var[var_index][i] = var[src_var][i];
-                        str_var[var_index][i] = NULL;
-                    }
-                }
-                array_sizes[var_index] = array_sizes[src_var];
+    int var_index = ((Arrayvarasgn *)a)->var;
+    Ast *array_expr = ((Arrayvarasgn *)a)->array_expr;
+    
+    
+    // Limpa o array atual
+    clear_array(var_index);
+    
+    if (array_expr->nodetype == 'T') {
+        // Array literal [1, 2, 3] ou []
+        Arraylit *lit = (Arraylit *)array_expr;
+        
+        // Copia os elementos
+        for (int i = 0; i < lit->count && i < MAX_ARRAY_SIZE; i++) {
+            if (lit->elements[i]->nodetype == 'S') {
+                // Elemento é string
+                str_var[var_index][i] = strdup(((Strval *)lit->elements[i])->string);
+                var[var_index][i] = 0.0;
+            } else {
+                // Elemento é número
+                var[var_index][i] = eval(lit->elements[i]);
+                str_var[var_index][i] = NULL;
             }
-            
-            v = 0.0;
-            break;
         }
+        array_sizes[var_index] = lit->count;
+        
+    } else if (array_expr->nodetype == 'N') {
+        // Cópia de outro array: b = a
+        int src_var = ((Varval *)array_expr)->var;
+        
+        // *** CORREÇÃO AQUI ***
+        // Se a variável fonte é uma variável simples (não array), 
+        // copie apenas o valor do índice 0
+        if (array_sizes[src_var] == 0) {
+            // Variável simples - copia apenas o valor único
+            if (str_var[src_var][0] != NULL) {
+                str_var[var_index][0] = strdup(str_var[src_var][0]);
+                var[var_index][0] = 0.0;
+            } else {
+                var[var_index][0] = var[src_var][0];
+                str_var[var_index][0] = NULL;
+            }
+            array_sizes[var_index] = 1; // Marca como tendo 1 elemento
+        } else {
+            // Copia todos os elementos do array origem
+            for (int i = 0; i < array_sizes[src_var] && i < MAX_ARRAY_SIZE; i++) {
+                if (str_var[src_var][i] != NULL) {
+                    str_var[var_index][i] = strdup(str_var[src_var][i]);
+                    var[var_index][i] = 0.0;
+                } else {
+                    var[var_index][i] = var[src_var][i];
+                    str_var[var_index][i] = NULL;
+                }
+            }
+            array_sizes[var_index] = array_sizes[src_var];
+        }
+    }
+    
+
+    
+    v = 0.0;
+    break;
+}
+
 		
 		case '+': v = eval(a->l) + eval(a->r); break;	/*Operações "árv esq   +   árv dir"*/
 		case '-': v = eval(a->l) - eval(a->r); break;	/*Operações*/

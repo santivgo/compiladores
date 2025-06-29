@@ -68,15 +68,11 @@ if (c){
         s = s + n[i]
         i = i + 1
     }
-
-
+    k = q
 }
 
-if (c){
-    f = s / k
-}else{
-    f = s / q
-}
+f = s / k
+
 
 print("Sua nota final é: ", f, "\n")
 
